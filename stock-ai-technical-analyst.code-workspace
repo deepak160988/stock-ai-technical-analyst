@@ -1,0 +1,133 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+		"python.linting.enabled": true,
+		"python.linting.pylintEnabled": true,
+		"python.formatting.provider": "black",
+		"python.testing.pytestEnabled": true,
+		"python.testing.unittestEnabled": false,
+		"python.testing.pytestArgs": [
+			"tests"
+		],
+		"files.exclude": {
+			"**/__pycache__": true,
+			"**/*.pyc": true,
+			"**/.pytest_cache": true,
+			"**/.venv": true,
+			"**/.env": true
+		},
+		"editor.formatOnSave": true,
+		"editor.rulers": [
+			88,
+			120
+		],
+		"files.trimTrailingWhitespace": true,
+		"files.insertFinalNewline": true,
+		"[python]": {
+			"editor.tabSize": 4,
+			"editor.insertSpaces": true,
+			"editor.formatOnSave": true,
+			"editor.codeActionsOnSave": {
+				"source.organizeImports": "explicit"
+			}
+		}
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-python.python",
+			"ms-python.vscode-pylance",
+			"ms-python.black-formatter",
+			"ms-python.pylint",
+			"ms-python.debugpy",
+			"ms-toolsai.jupyter",
+			"tamasfe.even-better-toml",
+			"redhat.vscode-yaml",
+			"github.copilot",
+			"eamodio.gitlens"
+		]
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"name": "Python: FastAPI",
+				"type": "python",
+				"request": "launch",
+				"module": "uvicorn",
+				"args": [
+					"main:app",
+					"--reload",
+					"--host",
+					"0.0.0.0",
+					"--port",
+					"8000"
+				],
+				"jinja": true,
+				"justMyCode": true,
+				"env": {
+					"PYTHONPATH": "${workspaceFolder}"
+				}
+			},
+			{
+				"name": "Python: Current File",
+				"type": "python",
+				"request": "launch",
+				"program": "${file}",
+				"console": "integratedTerminal",
+				"justMyCode": true
+			},
+			{
+				"name": "Python: Debug Tests",
+				"type": "python",
+				"request": "launch",
+				"module": "pytest",
+				"args": [
+					"-v",
+					"${workspaceFolder}/tests"
+				],
+				"console": "integratedTerminal",
+				"justMyCode": false
+			}
+		]
+	},
+	"tasks": {
+		"version": "2.0.0",
+		"tasks": [
+			{
+				"label": "Install Dependencies",
+				"type": "shell",
+				"command": "pip install -r requirements.txt",
+				"problemMatcher": []
+			},
+			{
+				"label": "Run FastAPI Server",
+				"type": "shell",
+				"command": "uvicorn main:app --reload --host 0.0.0.0 --port 8000",
+				"problemMatcher": []
+			},
+			{
+				"label": "Run Tests",
+				"type": "shell",
+				"command": "pytest -v",
+				"problemMatcher": []
+			},
+			{
+				"label": "Format Code",
+				"type": "shell",
+				"command": "black .",
+				"problemMatcher": []
+			},
+			{
+				"label": "Lint Code",
+				"type": "shell",
+				"command": "pylint **/*.py",
+				"problemMatcher": []
+			}
+		]
+	}
+}
