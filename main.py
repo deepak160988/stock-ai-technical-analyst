@@ -84,6 +84,13 @@ except Exception as e:
     logger.warning(f"AI service import failed: {e}")
     ai_service = None
 
+try:
+    from services.indian_stock_service import indian_stock_service
+    logger.info("✓ Indian stock service imported")
+except Exception as e:
+    logger.warning(f"Indian stock service import failed: {e}")
+    indian_stock_service = None
+
 app = FastAPI(title="Stock AI Technical Analyst API", version="1.0.0", docs_url="/docs", redoc_url="/redoc")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
@@ -528,7 +535,7 @@ async def get_signals(symbol: str, days: int = Query(365, ge=1, le=1000)):
             raise HTTPException(status_code=500, detail="Error calculating indicators")
         signal_data = signals_service.generate_signal(indicators)
         logger.info(f"Generated {signal_data['signal']} signal for {symbol}")
-        return {"symbol": symbol.upper(), "signal": signal_data['signal'], "confidence": round(signal_data['confidence'], 2), "reasons": signal_data['reasons'], "analysis": signal_data['analysis'], "timestamp": signal_data['timestamp']}
+        return {"symbol": symbol.upper(), "signal": signal_data['signal'], "confidence": round(signal_data['confidence'], 2), "reasons": signal_data['reasons'], "analysis": signal_data['analysis'], "timestamp": datetime.now().isoformat()}
     except HTTPException:
         raise
     except Exception as e:
@@ -661,6 +668,173 @@ async def get_ai_analysis(symbol: str, days: int = Query(365, ge=1, le=1000)):
         logger.error(f"Error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
+# ============================================
+# INDIAN STOCKS ENDPOINTS
+# ============================================
+
+@app.get("/api/indian/stocks/list")
+async def get_indian_stocks_list():
+    """Get list of supported Indian stocks"""
+    try:
+        if not indian_stock_service:
+            raise HTTPException(status_code=503, detail="Indian stock service not available")
+        stocks = list(indian_stock_service.indian_stocks.keys())
+        logger.info(f"Retrieved list of {len(stocks)} Indian stocks")
+        return {"stocks": stocks, "total": len(stocks), "timestamp": datetime.now().isoformat()}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@app.get("/api/indian/stocks/search")
+async def search_indian_stocks(query: str):
+    """Search for Indian stocks"""
+    try:
+        if not indian_stock_service:
+            raise HTTPException(status_code=503, detail="Indian stock service not available")
+        if not query or len(query.strip()) == 0:
+            raise HTTPException(status_code=400, detail="Search query cannot be empty")
+        results = indian_stock_service.search_indian_stocks(query)
+        logger.info(f"Search results for '{query}': {len(results)} stocks found")
+        return {"query": query, "results": results, "total": len(results), "timestamp": datetime.now().isoformat()}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@app.get("/api/indian/stocks/{symbol}")
+async def get_indian_stock_data(symbol: str, days: int = Query(365, ge=1, le=1000)):
+    """Get historical data for Indian stock"""
+    try:
+        if not indian_stock_service:
+            raise HTTPException(status_code=503, detail="Indian stock service not available")
+        if not indian_stock_service.validate_indian_symbol(symbol.upper()):
+            raise HTTPException(status_code=404, detail=f"Indian stock symbol {symbol} not found")
+        df = indian_stock_service.get_indian_stock_historical_data(symbol.upper(), days)
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"No data found for Indian stock {symbol}")
+        latest_price = df['Close'].iloc[-1]
+        prices = [{"date": idx.isoformat(), "open": float(row['Open']), "high": float(row['High']), "low": float(row['Low']), "close": float(row['Close']), "volume": int(row['Volume'])} for idx, row in df.iterrows()]
+        logger.info(f"Retrieved {len(prices)} days of data for Indian stock {symbol}")
+        return {"symbol": symbol.upper(), "prices": prices, "current_price_inr": float(latest_price), "currency": "INR", "exchange": "NSE", "last_updated": datetime.now().isoformat(), "data_points": len(prices)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@app.get("/api/indian/stocks/{symbol}/latest")
+async def get_indian_stock_latest_price(symbol: str):
+    """Get latest price for Indian stock"""
+    try:
+        if not indian_stock_service:
+            raise HTTPException(status_code=503, detail="Indian stock service not available")
+        latest_price = indian_stock_service.get_indian_stock_price(symbol.upper())
+        if latest_price is None:
+            raise HTTPException(status_code=404, detail=f"No data found for Indian stock {symbol}")
+        stock_info = indian_stock_service.get_indian_stock_info(symbol.upper())
+        logger.info(f"Retrieved latest price for Indian stock {symbol}: ₹{latest_price}")
+        return {"symbol": symbol.upper(), "price_inr": latest_price, "currency": "INR", "exchange": "NSE", "name": stock_info.get("name"), "sector": stock_info.get("sector"), "timestamp": datetime.now().isoformat()}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@app.get("/api/indian/stocks/{symbol}/info")
+async def get_indian_stock_info_endpoint(symbol: str):
+    """Get information about Indian stock"""
+    try:
+        if not indian_stock_service:
+            raise HTTPException(status_code=503, detail="Indian stock service not available")
+        stock_info = indian_stock_service.get_indian_stock_info(symbol.upper())
+        logger.info(f"Retrieved info for Indian stock {symbol}")
+        return {**stock_info, "timestamp": datetime.now().isoformat()}
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@app.get("/api/indian/stocks/{symbol}/indicators")
+async def get_indian_stock_indicators(symbol: str, days: int = Query(365, ge=1, le=1000)):
+    """Get technical indicators for Indian stock"""
+    try:
+        if not indian_stock_service or not indicators_service:
+            raise HTTPException(status_code=503, detail="Services not available")
+        df = indian_stock_service.get_indian_stock_historical_data(symbol.upper(), days)
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"No data found for Indian stock {symbol}")
+        indicators = indicators_service.get_all_indicators(df)
+        if not indicators:
+            raise HTTPException(status_code=500, detail="Error calculating indicators")
+        logger.info(f"Calculated indicators for Indian stock {symbol}")
+        return {"symbol": symbol.upper(), "exchange": "NSE", "currency": "INR", "indicators": indicators, "data_points": len(df), "timestamp": datetime.now().isoformat()}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@app.get("/api/indian/stocks/{symbol}/atr")
+async def get_indian_stock_atr(symbol: str, days: int = Query(365, ge=1, le=1000), window: int = Query(14, ge=5, le=100)):
+    """Get ATR for Indian stock"""
+    try:
+        if not indian_stock_service or not volatility_indicators_service:
+            raise HTTPException(status_code=503, detail="Services not available")
+        df = indian_stock_service.get_indian_stock_historical_data(symbol.upper(), days)
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"No data found for Indian stock {symbol}")
+        highs = df['High'].tolist()
+        lows = df['Low'].tolist()
+        closes = df['Close'].tolist()
+        atr = volatility_indicators_service.calculate_atr(highs, lows, closes, window)
+        logger.info(f"Calculated ATR for Indian stock {symbol}")
+        return {"symbol": symbol.upper(), "exchange": "NSE", "currency": "INR", "indicator": "atr", "window": window, "values": atr, "data_points": len(atr), "latest_atr": atr[-1] if atr else None, "timestamp": datetime.now().isoformat()}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@app.get("/api/indian/stocks/{symbol}/rsi")
+async def get_indian_stock_rsi(symbol: str, days: int = Query(365, ge=1, le=1000), window: int = Query(14, ge=5, le=100)):
+    """Get RSI for Indian stock"""
+    try:
+        if not indian_stock_service or not indicators_service:
+            raise HTTPException(status_code=503, detail="Services not available")
+        df = indian_stock_service.get_indian_stock_historical_data(symbol.upper(), days)
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"No data found for Indian stock {symbol}")
+        prices = df['Close'].tolist()
+        rsi, overbought, oversold = indicators_service.calculate_rsi(prices, window)
+        logger.info(f"Calculated RSI for Indian stock {symbol}")
+        return {"symbol": symbol.upper(), "exchange": "NSE", "currency": "INR", "indicator": "rsi", "window": window, "values": rsi, "overbought_flags": overbought, "oversold_flags": oversold, "data_points": len(rsi), "latest_rsi": rsi[-1] if rsi else None, "timestamp": datetime.now().isoformat()}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@app.get("/api/indian/stocks/{symbol}/macd")
+async def get_indian_stock_macd(symbol: str, days: int = Query(365, ge=1, le=1000)):
+    """Get MACD for Indian stock"""
+    try:
+        if not indian_stock_service or not indicators_service:
+            raise HTTPException(status_code=503, detail="Services not available")
+        df = indian_stock_service.get_indian_stock_historical_data(symbol.upper(), days)
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"No data found for Indian stock {symbol}")
+        prices = df['Close'].tolist()
+        macd_line, signal_line, histogram = indicators_service.calculate_macd(prices)
+        logger.info(f"Calculated MACD for Indian stock {symbol}")
+        return {"symbol": symbol.upper(), "exchange": "NSE", "currency": "INR", "indicator": "macd", "macd_line": macd_line, "signal_line": signal_line, "histogram": histogram, "data_points": len(macd_line), "timestamp": datetime.now().isoformat()}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
     logger.error(f"Unhandled exception: {str(exc)}")
@@ -669,5 +843,5 @@ async def global_exception_handler(request, exc):
 if __name__ == "__main__":
     import uvicorn
     logger.info(f"Starting Stock AI Technical Analyst API v1.0.0")
-    logger.info(f"Services: Stock={stock_service is not None}, Indicators={indicators_service is not None}, Volume={volume_indicators_service is not None}, Momentum={momentum_indicators_service is not None}, Volatility={volatility_indicators_service is not None}, Trend={trend_indicators_service is not None}, Signals={signals_service is not None}, Portfolio={portfolio_service is not None}, AI={ai_service is not None}")
+    logger.info(f"Services: Stock={stock_service is not None}, Indicators={indicators_service is not None}, Volume={volume_indicators_service is not None}, Momentum={momentum_indicators_service is not None}, Volatility={volatility_indicators_service is not None}, Trend={trend_indicators_service is not None}, Signals={signals_service is not None}, Portfolio={portfolio_service is not None}, AI={ai_service is not None}, Indian={indian_stock_service is not None}")
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
