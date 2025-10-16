@@ -1,2 +1,3 @@
-# stock-ai-technical-analyst
-A comprehensive AI-powered stock technical analysis assistant that provides real-time analysis, technical indicators, visualization, buy/sell signals, portfolio tracking, and natural language queries
+# Stock AI Technical Analyst
+
+This repository contains a FastAPI backend for stock technical analysis.
