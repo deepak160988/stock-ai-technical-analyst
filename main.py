@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import logging
@@ -90,13 +90,6 @@ try:
 except Exception as e:
     logger.warning(f"Indian stock service import failed: {e}")
     indian_stock_service = None
-
-try:
-    from services.portfolio_analytics_service import portfolio_analytics_service
-    logger.info("✓ Portfolio analytics service imported")
-except Exception as e:
-    logger.warning(f"Portfolio analytics service import failed: {e}")
-    portfolio_analytics_service = None
 
 app = FastAPI(title="Stock AI Technical Analyst API", version="1.0.0", docs_url="/docs", redoc_url="/redoc")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
@@ -675,13 +668,8 @@ async def get_ai_analysis(symbol: str, days: int = Query(365, ge=1, le=1000)):
         logger.error(f"Error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
-# ============================================
-# INDIAN STOCKS ENDPOINTS
-# ============================================
-
 @app.get("/api/indian/stocks/list")
 async def get_indian_stocks_list():
-    """Get list of supported Indian stocks"""
     try:
         if not indian_stock_service:
             raise HTTPException(status_code=503, detail="Indian stock service not available")
@@ -696,7 +684,6 @@ async def get_indian_stocks_list():
 
 @app.get("/api/indian/stocks/search")
 async def search_indian_stocks(query: str):
-    """Search for Indian stocks"""
     try:
         if not indian_stock_service:
             raise HTTPException(status_code=503, detail="Indian stock service not available")
@@ -713,7 +700,6 @@ async def search_indian_stocks(query: str):
 
 @app.get("/api/indian/stocks/{symbol}")
 async def get_indian_stock_data(symbol: str, days: int = Query(365, ge=1, le=1000)):
-    """Get historical data for Indian stock"""
     try:
         if not indian_stock_service:
             raise HTTPException(status_code=503, detail="Indian stock service not available")
@@ -734,7 +720,6 @@ async def get_indian_stock_data(symbol: str, days: int = Query(365, ge=1, le=100
 
 @app.get("/api/indian/stocks/{symbol}/latest")
 async def get_indian_stock_latest_price(symbol: str):
-    """Get latest price for Indian stock"""
     try:
         if not indian_stock_service:
             raise HTTPException(status_code=503, detail="Indian stock service not available")
@@ -752,7 +737,6 @@ async def get_indian_stock_latest_price(symbol: str):
 
 @app.get("/api/indian/stocks/{symbol}/info")
 async def get_indian_stock_info_endpoint(symbol: str):
-    """Get information about Indian stock"""
     try:
         if not indian_stock_service:
             raise HTTPException(status_code=503, detail="Indian stock service not available")
@@ -765,7 +749,6 @@ async def get_indian_stock_info_endpoint(symbol: str):
 
 @app.get("/api/indian/stocks/{symbol}/indicators")
 async def get_indian_stock_indicators(symbol: str, days: int = Query(365, ge=1, le=1000)):
-    """Get technical indicators for Indian stock"""
     try:
         if not indian_stock_service or not indicators_service:
             raise HTTPException(status_code=503, detail="Services not available")
@@ -785,7 +768,6 @@ async def get_indian_stock_indicators(symbol: str, days: int = Query(365, ge=1, 
 
 @app.get("/api/indian/stocks/{symbol}/atr")
 async def get_indian_stock_atr(symbol: str, days: int = Query(365, ge=1, le=1000), window: int = Query(14, ge=5, le=100)):
-    """Get ATR for Indian stock"""
     try:
         if not indian_stock_service or not volatility_indicators_service:
             raise HTTPException(status_code=503, detail="Services not available")
@@ -806,7 +788,6 @@ async def get_indian_stock_atr(symbol: str, days: int = Query(365, ge=1, le=1000
 
 @app.get("/api/indian/stocks/{symbol}/rsi")
 async def get_indian_stock_rsi(symbol: str, days: int = Query(365, ge=1, le=1000), window: int = Query(14, ge=5, le=100)):
-    """Get RSI for Indian stock"""
     try:
         if not indian_stock_service or not indicators_service:
             raise HTTPException(status_code=503, detail="Services not available")
@@ -825,7 +806,6 @@ async def get_indian_stock_rsi(symbol: str, days: int = Query(365, ge=1, le=1000
 
 @app.get("/api/indian/stocks/{symbol}/macd")
 async def get_indian_stock_macd(symbol: str, days: int = Query(365, ge=1, le=1000)):
-    """Get MACD for Indian stock"""
     try:
         if not indian_stock_service or not indicators_service:
             raise HTTPException(status_code=503, detail="Services not available")
@@ -842,172 +822,13 @@ async def get_indian_stock_macd(symbol: str, days: int = Query(365, ge=1, le=100
         logger.error(f"Error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
-# ============================================
-# ADVANCED PORTFOLIO ANALYTICS ENDPOINTS
-# ============================================
-
-@app.get("/api/portfolio/analytics/metrics")
-async def get_portfolio_analytics_metrics():
-    """Get comprehensive portfolio metrics including risk ratios"""
-    try:
-        if not portfolio_service or not portfolio_analytics_service:
-            raise HTTPException(status_code=503, detail="Services not available")
-        portfolio = portfolio_service.get_portfolio()
-        if not portfolio.positions:
-            raise HTTPException(status_code=404, detail="No positions in portfolio")
-        
-        holdings = {}
-        for position in portfolio.positions:
-            holdings[position.symbol] = {
-                'price': position.current_price or 0,
-                'quantity': position.quantity,
-                'returns': [0.01]
-            }
-        
-        metrics = portfolio_analytics_service.calculate_portfolio_metrics(holdings)
-        logger.info("Retrieved portfolio analytics metrics")
-        return {**metrics, "timestamp": datetime.now().isoformat()}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
-
-@app.get("/api/portfolio/analytics/sharpe-ratio")
-async def get_sharpe_ratio():
-    """Calculate Sharpe Ratio"""
-    try:
-        if not portfolio_analytics_service:
-            raise HTTPException(status_code=503, detail="Service not available")
-        sharpe = portfolio_analytics_service.calculate_sharpe_ratio([0.01, 0.02, -0.01, 0.015])
-        logger.info(f"Sharpe Ratio: {sharpe}")
-        return {"sharpe_ratio": sharpe, "timestamp": datetime.now().isoformat()}
-    except Exception as e:
-        logger.error(f"Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
-
-@app.get("/api/portfolio/analytics/sortino-ratio")
-async def get_sortino_ratio():
-    """Calculate Sortino Ratio"""
-    try:
-        if not portfolio_analytics_service:
-            raise HTTPException(status_code=503, detail="Service not available")
-        sortino = portfolio_analytics_service.calculate_sortino_ratio([0.01, 0.02, -0.01, 0.015])
-        logger.info(f"Sortino Ratio: {sortino}")
-        return {"sortino_ratio": sortino, "timestamp": datetime.now().isoformat()}
-    except Exception as e:
-        logger.error(f"Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
-
-@app.get("/api/portfolio/analytics/max-drawdown")
-async def get_max_drawdown_endpoint():
-    """Calculate Maximum Drawdown"""
-    try:
-        if not portfolio_analytics_service:
-            raise HTTPException(status_code=503, detail="Service not available")
-        max_dd = portfolio_analytics_service.calculate_max_drawdown([0.01, 0.02, -0.01, 0.015, -0.05])
-        logger.info(f"Max Drawdown: {max_dd}")
-        return {"max_drawdown": max_dd, "timestamp": datetime.now().isoformat()}
-    except Exception as e:
-        logger.error(f"Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
-
-@app.get("/api/portfolio/analytics/var")
-async def get_var_endpoint(confidence_level: float = Query(0.95, ge=0.5, le=0.99)):
-    """Calculate Value at Risk"""
-    try:
-        if not portfolio_analytics_service:
-            raise HTTPException(status_code=503, detail="Service not available")
-        var = portfolio_analytics_service.calculate_var([0.01, 0.02, -0.01, 0.015, -0.05, -0.02], confidence_level)
-        logger.info(f"VaR at {confidence_level*100}%: {var}")
-        return {"var": var, "confidence_level": confidence_level, "timestamp": datetime.now().isoformat()}
-    except Exception as e:
-        logger.error(f"Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
-
-@app.get("/api/portfolio/analytics/cvar")
-async def get_cvar_endpoint(confidence_level: float = Query(0.95, ge=0.5, le=0.99)):
-    """Calculate Conditional Value at Risk"""
-    try:
-        if not portfolio_analytics_service:
-            raise HTTPException(status_code=503, detail="Service not available")
-        cvar = portfolio_analytics_service.calculate_cvar([0.01, 0.02, -0.01, 0.015, -0.05, -0.02], confidence_level)
-        logger.info(f"CVaR at {confidence_level*100}%: {cvar}")
-        return {"cvar": cvar, "confidence_level": confidence_level, "timestamp": datetime.now().isoformat()}
-    except Exception as e:
-        logger.error(f"Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
-
-@app.get("/api/portfolio/analytics/sector-allocation")
-async def get_sector_allocation():
-    """Get portfolio sector allocation"""
-    try:
-        if not portfolio_service or not portfolio_analytics_service:
-            raise HTTPException(status_code=503, detail="Services not available")
-        portfolio = portfolio_service.get_portfolio()
-        if not portfolio.positions:
-            raise HTTPException(status_code=404, detail="No positions in portfolio")
-        
-        holdings = {}
-        for position in portfolio.positions:
-            holdings[position.symbol] = {
-                'price': position.current_price or 0,
-                'quantity': position.quantity,
-                'sector': position.sector if hasattr(position, 'sector') else 'Unknown'
-            }
-        
-        allocation = portfolio_analytics_service.calculate_sector_allocation(holdings)
-        logger.info("Retrieved sector allocation")
-        return {"sector_allocation": allocation, "timestamp": datetime.now().isoformat()}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
-
-@app.get("/api/portfolio/analytics/diversification-ratio")
-async def get_diversification_ratio():
-    """Calculate Diversification Ratio"""
-    try:
-        if not portfolio_service or not portfolio_analytics_service:
-            raise HTTPException(status_code=503, detail="Services not available")
-        portfolio = portfolio_service.get_portfolio()
-        if not portfolio.positions:
-            raise HTTPException(status_code=404, detail="No positions in portfolio")
-        
-        holdings = {}
-        for position in portfolio.positions:
-            holdings[position.symbol] = {
-                'price': position.current_price or 0,
-                'quantity': position.quantity
-            }
-        
-        div_ratio = portfolio_analytics_service.calculate_diversification_ratio(holdings)
-        logger.info(f"Diversification Ratio: {div_ratio}")
-        return {"diversification_ratio": div_ratio, "timestamp": datetime.now().isoformat()}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
-
-@app.get("/api/portfolio/analytics/efficient-frontier")
-async def get_efficient_frontier(num_portfolios: int = Query(100, ge=10, le=1000)):
-    """Calculate efficient frontier"""
-    try:
-        if not portfolio_analytics_service:
-            raise HTTPException(status_code=503, detail="Service not available")
-        returns_dict = {
-            "AAPL": [0.01, 0.02, -0.01, 0.015, 0.02],
-            "MSFT": [0.015, 0.025, -0.005, 0.01, 0.018],
-            "GOOGL": [0.02, 0.015, -0.02, 0.025, 0.01]
-        }
-        frontier = portfolio_analytics_service.calculate_efficient_frontier(returns_dict, num_portfolios)
-        logger.info("Calculated efficient frontier")
-        return {**frontier, "timestamp": datetime.now().isoformat()}
-    except Exception as e:
-        logger.error(f"Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
-
 @app.exception_handler(Exception)
-async def global
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception: {str(exc)}")
+    return JSONResponse(status_code=500, content={"detail": "Internal server error", "error": str(exc), "timestamp": datetime.now().isoformat()})
+
+if __name__ == "__main__":
+    import uvicorn
+    logger.info("Starting Stock AI Technical Analyst API v1.0.0")
+    logger.info(f"Services available: Stock={stock_service is not None}, Indicators={indicators_service is not None}")
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
