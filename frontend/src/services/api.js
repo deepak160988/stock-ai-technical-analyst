@@ -1,39 +1,62 @@
-// API methods
+import axios from 'axios';
 
-export const getStockData = async (symbol) => {
-    // ...implementation
+// Create axios instance with base configuration
+const api = axios.create({
+    baseURL: '/api',
+    timeout: 10000,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+// API methods
+export const getStockData = async (symbol, days = 365) => {
+    const response = await api.get(`/stocks/${symbol}`, {
+        params: { days },
+    });
+    return response.data;
 };
 
 export const getMarketData = async () => {
-    // ...implementation
+    const response = await api.get('/market/overview');
+    return response.data;
 };
 
-export const getHistoricalData = async (symbol, range) => {
-    // ...implementation
+export const getHistoricalData = async (symbol, range = 365) => {
+    const response = await api.get(`/stocks/${symbol}`, {
+        params: { days: range },
+    });
+    return response.data;
 };
 
 export const getNewsData = async (symbol) => {
-    // ...implementation
+    const response = await api.get(`/news/${symbol}`);
+    return response.data;
 };
 
 export const getCompanyProfile = async (symbol) => {
-    // ...implementation
+    const response = await api.get(`/stocks/${symbol}/profile`);
+    return response.data;
 };
 
 export const getRecommendations = async (symbol) => {
-    // ...implementation
+    const response = await api.get(`/recommendations/${symbol}`);
+    return response.data;
 };
 
 export const getEarningsData = async (symbol) => {
-    // ...implementation
+    const response = await api.get(`/earnings/${symbol}`);
+    return response.data;
 };
 
 export const getDividendsData = async (symbol) => {
-    // ...implementation
+    const response = await api.get(`/dividends/${symbol}`);
+    return response.data;
 };
 
 export const getTechnicalIndicators = async (symbol) => {
-    // ...implementation
+    const response = await api.get(`/indicators/${symbol}`);
+    return response.data;
 };
 
 // Default export for compatibility with Dashboard.jsx
