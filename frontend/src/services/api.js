@@ -1,9 +1,11 @@
 // Detect if running in GitHub Codespaces
 const isCodespaces = window.location.hostname.endsWith('.app.github.dev');
 
-// In Codespaces, use relative URLs (proxy handles routing to backend)
-// In local dev, use localhost:8000
-const baseURL = isCodespaces ? '' : 'http://localhost:8000';
+// In Codespaces, construct the backend URL by replacing the port
+// In local dev, use relative URLs (proxy handles routing to backend on port 8000)
+const baseURL = isCodespaces 
+  ? window.location.origin.replace('-3000.', '-8000.') 
+  : '';
 
 const api = {
     getStockData: async (symbol, days = 365) => {
