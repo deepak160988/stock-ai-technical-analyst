@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { TrendingUp } from 'lucide-react';
 
-const API_BASE = 'https://super-duper-tribble-9q5pwqjgqpx2xgwv-8000.app.github.dev';
+// Prefer env or relative paths to work across Codespaces/local
+const API_BASE = process.env.REACT_APP_API_BASE_URL || '';
 
 function IndianStocks() {
   const [stocks, setStocks] = useState([]);

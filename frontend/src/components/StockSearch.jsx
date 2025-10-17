@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Search } from 'lucide-react';
 import axios from 'axios';
 
-const API_BASE = 'https://super-duper-tribble-9q5pwqjgqpx2xgwv-8000.app.github.dev';
+// Prefer env or relative paths to work across Codespaces/local
+const API_BASE = process.env.REACT_APP_API_BASE_URL || '';
 
 function StockSearch({ onSelectStock }) {
   const [symbol, setSymbol] = useState('');
