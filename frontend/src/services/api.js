@@ -1,44 +1,100 @@
 import axios from 'axios';
 
-// Detect if we are in a Codespaces environment
-const isCodespaces = Boolean(process.env.CODESPACES);
-
-// Base URL configuration
-const baseURL = isCodespaces ? 'https://api.codespaces.example.com' : 'https://api.production.example.com';
-
-// Create an API client
 const apiClient = axios.create({
-    baseURL,
-    timeout: 10000, // 10 seconds timeout
+    baseURL: 'https://api.example.com', // replace with your API base URL
+    timeout: 1000,
 });
 
-// Request/Response Interceptors
-apiClient.interceptors.request.use(config => {
-    console.log('Making request to:', config.url);
-    return config;
-}, error => {
-    console.error('Request error:', error);
-    return Promise.reject(error);
-});
+const api = {
+    async getStockData(stockSymbol) {
+        try {
+            const response = await apiClient.get(`/stocks/${stockSymbol}`);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching stock data:', error);
+            throw error;
+        }
+    },
 
-apiClient.interceptors.response.use(response => {
-    console.log('Response received:', response);
-    return response;
-}, error => {
-    console.error('Response error:', error);
-    return Promise.reject(error);
-});
+    async getLatestPrice(stockSymbol) {
+        try {
+            const response = await apiClient.get(`/stocks/${stockSymbol}/latest-price`);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching latest price:', error);
+            throw error;
+        }
+    },
 
-// API methods
-export const getStockData = (symbol) => apiClient.get(`/stocks/${symbol}`);
-export const getLatestPrice = (symbol) => apiClient.get(`/stocks/${symbol}/price`);
-export const getIndicators = (symbol) => apiClient.get(`/stocks/${symbol}/indicators`);
-export const getRSI = (symbol) => apiClient.get(`/stocks/${symbol}/rsi`);
-export const getMACD = (symbol) => apiClient.get(`/stocks/${symbol}/macd`);
-export const getSignals = (symbol) => apiClient.get(`/stocks/${symbol}/signals`);
-export const getPortfolio = () => apiClient.get(`/portfolio`);
-export const getIndianStocks = () => apiClient.get(`/stocks/indian`);
-export const getMLPrediction = (data) => apiClient.post(`/ml/predict`, data);
+    async getIndicators(stockSymbol) {
+        try {
+            const response = await apiClient.get(`/stocks/${stockSymbol}/indicators`);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching indicators:', error);
+            throw error;
+        }
+    },
 
-// Default export
-export default apiClient;
+    async getRSI(stockSymbol) {
+        try {
+            const response = await apiClient.get(`/stocks/${stockSymbol}/rsi`);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching RSI:', error);
+            throw error;
+        }
+    },
+
+    async getMACD(stockSymbol) {
+        try {
+            const response = await apiClient.get(`/stocks/${stockSymbol}/macd`);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching MACD:', error);
+            throw error;
+        }
+    },
+
+    async getSignals(stockSymbol) {
+        try {
+            const response = await apiClient.get(`/stocks/${stockSymbol}/signals`);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching signals:', error);
+            throw error;
+        }
+    },
+
+    async getPortfolio(userId) {
+        try {
+            const response = await apiClient.get(`/users/${userId}/portfolio`);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching portfolio:', error);
+            throw error;
+        }
+    },
+
+    async getIndianStocks() {
+        try {
+            const response = await apiClient.get('/stocks/indian');
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching Indian stocks:', error);
+            throw error;
+        }
+    },
+
+    async getMLPrediction(data) {
+        try {
+            const response = await apiClient.post('/ml/predict', data);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching ML prediction:', error);
+            throw error;
+        }
+    },
+};
+
+export default api;
