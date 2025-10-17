@@ -11,19 +11,64 @@ function Dashboard() {
   const [stockData, setStockData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isIndianStock, setIsIndianStock] = useState(false);
+  const [indianStocksList, setIndianStocksList] = useState([]);
 
+  // Fetch Indian stocks list on component mount
   useEffect(() => {
-    fetchStockData();
-  }, [symbol]);
+    const loadIndianStocks = async () => {
+      try {
+        console.log('Fetching Indian stocks list from backend...');
+        const response = await api.getIndianStocks();
+        console.log('Indian stocks loaded:', response.stocks);
+        setIndianStocksList(response.stocks || []);
+      } catch (err) {
+        console.error('Failed to load Indian stocks list:', err);
+        // Fallback to hardcoded list if API fails
+        setIndianStocksList([
+          'RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'HINDUNILVR', 'ICICIBANK', 
+          'KOTAKBANK', 'SBIN', 'BHARTIARTL', 'ITC', 'AXISBANK', 'LT', 
+          'ASIANPAINT', 'MARUTI', 'BAJFINANCE', 'WIPRO', 'TITAN', 'ULTRACEMCO',
+          'NESTLEIND', 'SUNPHARMA', 'ONGC', 'NTPC', 'POWERGRID', 'M&M', 
+          'TECHM', 'TATASTEEL', 'BAJAJFINSV', 'HCLTECH', 'ADANIPORTS'
+        ]);
+      }
+    };
+    loadIndianStocks();
+  }, []);
+
+  // Fetch stock data when symbol changes
+  useEffect(() => {
+    if (indianStocksList.length > 0) {
+      fetchStockData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [symbol, indianStocksList]);
 
   const fetchStockData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await api.getStockData(symbol, 30);
+      
+      // Check if the symbol is an Indian stock
+      const isIndian = indianStocksList.includes(symbol.toUpperCase());
+      setIsIndianStock(isIndian);
+      
+      let data;
+      if (isIndian) {
+        // Fetch Indian stock data
+        console.log(`Fetching Indian stock data for ${symbol}`);
+        data = await api.getIndianStockData(symbol, 30);
+      } else {
+        // Fetch US stock data
+        console.log(`Fetching US stock data for ${symbol}`);
+        data = await api.getStockData(symbol, 30);
+      }
+      
       setStockData(data);
     } catch (err) {
-      setError('Failed to fetch stock data. Make sure the API is running on port 8000');
+      const errorMessage = err.response?.data?.detail || err.message || 'Unknown error';
+      setError(`Failed to fetch stock data: ${errorMessage}`);
       console.error(err);
     } finally {
       setLoading(false);
@@ -34,32 +79,52 @@ function Dashboard() {
     setSymbol(e.target.value.toUpperCase());
   };
 
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      fetchStockData();
+    }
+  };
+
   return (
     <div className="dashboard-container">
       <div className="search-container">
         <input
           type="text"
-          placeholder="Enter stock symbol (e.g., AAPL, RELIANCE)"
+          placeholder="Enter stock symbol (e.g., AAPL, TCS, RELIANCE)"
           value={symbol}
           onChange={handleSymbolChange}
+          onKeyPress={handleKeyPress}
           className="search-input"
         />
-        <button onClick={fetchStockData} className="search-button">
-          Search
+        <button onClick={fetchStockData} className="search-button" disabled={loading}>
+          {loading ? 'Loading...' : 'Search'}
         </button>
+        {isIndianStock && (
+          <span className="stock-type-badge indian">🇮🇳 Indian Stock</span>
+        )}
+        {!isIndianStock && stockData && (
+          <span className="stock-type-badge us">🇺🇸 US Stock</span>
+        )}
+        {indianStocksList.length > 0 && (
+          <span className="stocks-loaded">
+            ({indianStocksList.length} Indian stocks loaded)
+          </span>
+        )}
       </div>
 
       {error && <div className="error-message">{error}</div>}
 
+      {loading && <div className="loading-message">Loading stock data...</div>}
+
       <div className="dashboard-grid">
         <div className="section-full">
-          <StockChart symbol={symbol} data={stockData} />
+          <StockChart symbol={symbol} data={stockData} isIndianStock={isIndianStock} />
         </div>
         <div className="section">
-          <Indicators symbol={symbol} />
+          <Indicators symbol={symbol} isIndianStock={isIndianStock} />
         </div>
         <div className="section">
-          <MLPrediction symbol={symbol} />
+          <MLPrediction symbol={symbol} isIndianStock={isIndianStock} />
         </div>
         <div className="section-full">
           <Portfolio />
