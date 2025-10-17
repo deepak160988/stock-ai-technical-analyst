@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import axios from 'axios';
-
-const API_BASE = 'https://super-duper-tribble-9q5pwqjgqpx2xgwv-8000.app.github.dev';
+import api from '../services/api';
 
 function IndicatorsDashboard({ symbol }) {
   const [indicators, setIndicators] = useState(null);
@@ -13,8 +11,8 @@ function IndicatorsDashboard({ symbol }) {
     const fetchIndicators = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${API_BASE}/api/indicators/${symbol}`);
-        setIndicators(response.data);
+        const response = await api.getIndicators(symbol);
+        setIndicators(response);
       } catch (err) {
         setError('Error fetching indicators');
       } finally {

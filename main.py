@@ -70,7 +70,14 @@ except Exception as e:
     indian_stock_service = None
 
 app = FastAPI(title="Stock AI Technical Analyst API", version="1.0.0", docs_url="/docs", redoc_url="/redoc")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+# Allow localhost for local development and GitHub Codespaces URLs
+app.add_middleware(
+    CORSMiddleware,
+    allow_origin_regex=r"https://.*\.app\.github\.dev|http://localhost:.*",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 @app.get("/")
 async def root():
