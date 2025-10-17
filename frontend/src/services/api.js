@@ -1,107 +1,34 @@
 import axios from 'axios';
 
-const INDIAN_STOCKS = [
-    'RELIANCE', 'TCS', 'HDFC', 'INFY', 'HINDUNILVR',
-    'ICICIBANK', 'SBIN', 'HCLTECH', 'ITC'
-];
+// Detect environment and set base URL
+const hostname = window.location.hostname;
+const isCodespace = Boolean(process.env.CODESPACE_NAME);
+const baseURL = isCodespace ? `https://${hostname}:8000` : `http://${hostname}:3000`;
 
-export const isIndianStock = (symbol) => {
-    return INDIAN_STOCKS.includes(symbol);
+const axiosInstance = axios.create({
+    baseURL: baseURL,
+    timeout: 10000, // 10 seconds timeout
+});
+
+// Logging interceptor for request
+axiosInstance.interceptors.request.use((config) => {
+    console.log(`Making request to: ${config.url}`);
+    return config;
+}, (error) => {
+    return Promise.reject(error);
+});
+
+// API methods
+const apiMethods = {
+    getMethod1: () => axiosInstance.get('/method1'),
+    getMethod2: () => axiosInstance.get('/method2'),
+    postMethod1: (data) => axiosInstance.post('/method1', data),
+    postMethod2: (data) => axiosInstance.post('/method2', data),
+    putMethod1: (data) => axiosInstance.put('/method1', data),
+    deleteMethod1: (id) => axiosInstance.delete(`/method1/${id}`),
+    getMethod3: () => axiosInstance.get('/method3'),
+    getMethod4: () => axiosInstance.get('/method4'),
+    getMethod5: () => axiosInstance.get('/method5'),
 };
 
-export const getApiBaseUrl = () => {
-    return 'https://api.example.com'; // Replace with actual base URL
-};
-
-const api = {
-    async getStockData(symbol) {
-        try {
-            const response = await axios.get(`${getApiBaseUrl()}/stocks/${symbol}`);
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching stock data:', error);
-            throw error;
-        }
-    },
-
-    async getLatestPrice(symbol) {
-        try {
-            const response = await axios.get(`${getApiBaseUrl()}/stocks/${symbol}/price`);
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching latest price:', error);
-            throw error;
-        }
-    },
-
-    async getIndicators(symbol) {
-        try {
-            const response = await axios.get(`${getApiBaseUrl()}/stocks/${symbol}/indicators`);
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching indicators:', error);
-            throw error;
-        }
-    },
-
-    async getRSI(symbol) {
-        try {
-            const response = await axios.get(`${getApiBaseUrl()}/stocks/${symbol}/rsi`);
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching RSI:', error);
-            throw error;
-        }
-    },
-
-    async getMACD(symbol) {
-        try {
-            const response = await axios.get(`${getApiBaseUrl()}/stocks/${symbol}/macd`);
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching MACD:', error);
-            throw error;
-        }
-    },
-
-    async getSignals(symbol) {
-        try {
-            const response = await axios.get(`${getApiBaseUrl()}/stocks/${symbol}/signals`);
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching signals:', error);
-            throw error;
-        }
-    },
-
-    async getPortfolio(userId) {
-        try {
-            const response = await axios.get(`${getApiBaseUrl()}/users/${userId}/portfolio`);
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching portfolio:', error);
-            throw error;
-        }
-    },
-
-    async getIndianStocks() {
-        try {
-            return INDIAN_STOCKS;
-        } catch (error) {
-            console.error('Error fetching Indian stocks:', error);
-            throw error;
-        }
-    },
-
-    async getMLPrediction(data) {
-        try {
-            const response = await axios.post(`${getApiBaseUrl()}/ml/predict`, data);
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching ML prediction:', error);
-            throw error;
-        }
-    }
-};
-
-export default api;
+export default apiMethods;
