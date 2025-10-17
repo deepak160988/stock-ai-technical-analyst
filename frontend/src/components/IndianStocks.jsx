@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { TrendingUp } from 'lucide-react';
-
-const API_BASE = 'https://super-duper-tribble-9q5pwqjgqpx2xgwv-8000.app.github.dev';
+import api from '../services/api';
 
 function IndianStocks() {
   const [stocks, setStocks] = useState([]);
@@ -12,8 +10,8 @@ function IndianStocks() {
   useEffect(() => {
     const fetchStocks = async () => {
       try {
-        const response = await axios.get(`${API_BASE}/api/indian/stocks/list`);
-        setStocks(response.data.stocks);
+        const response = await api.getIndianStocksList();
+        setStocks(response.stocks || []);
       } catch (err) {
         console.error('Error fetching Indian stocks:', err);
       } finally {
@@ -27,15 +25,15 @@ function IndianStocks() {
   const handleSearch = async (query) => {
     setSearchQuery(query);
     if (!query) {
-      const response = await axios.get(`${API_BASE}/api/indian/stocks/list`);
-      setStocks(response.data.stocks);
+      const response = await api.getIndianStocksList();
+      setStocks(response.stocks || []);
     } else {
-      try {
-        const response = await axios.get(`${API_BASE}/api/indian/stocks/search?query=${query}`);
-        setStocks(response.data.results);
-      } catch (err) {
-        console.error('Error searching stocks:', err);
-      }
+      // Filter stocks locally for search
+      const response = await api.getIndianStocksList();
+      const filtered = response.stocks.filter(stock => 
+        stock.toLowerCase().includes(query.toLowerCase())
+      );
+      setStocks(filtered);
     }
   };
 

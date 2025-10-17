@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import axios from 'axios';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import api from '../services/api';
 
-const API_BASE = 'https://super-duper-tribble-9q5pwqjgqpx2xgwv-8000.app.github.dev';
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#a4de6c'];
 
 function PortfolioAnalytics() {
@@ -15,16 +14,18 @@ function PortfolioAnalytics() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const portfolioRes = await axios.get(`${API_BASE}/api/portfolio/`);
-        const analyticsRes = await axios.get(`${API_BASE}/api/portfolio/analytics/metrics`);
-        const sectorRes = await axios.get(`${API_BASE}/api/portfolio/analytics/sector-allocation`);
+        const portfolioRes = await api.getPortfolio();
+        setPortfolio(portfolioRes);
         
-        setPortfolio(portfolioRes.data);
-        setAnalytics(analyticsRes.data);
-        setSectorData(Object.entries(sectorRes.data.sector_allocation || {}).map(([name, value]) => ({
-          name,
-          value: parseFloat(value)
-        })));
+        // Only fetch analytics if the endpoint exists
+        try {
+          const analyticsRes = await api.getPortfolioMetrics();
+          setAnalytics(analyticsRes);
+        } catch (err) {
+          console.log('Analytics endpoint not available:', err);
+        }
+        
+        // Sector data would need a separate endpoint - skipping for now
       } catch (err) {
         console.error('Error fetching portfolio data:', err);
       } finally {

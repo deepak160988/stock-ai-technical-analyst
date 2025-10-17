@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { Search } from 'lucide-react';
-import axios from 'axios';
-
-const API_BASE = 'https://super-duper-tribble-9q5pwqjgqpx2xgwv-8000.app.github.dev';
+import api from '../services/api';
 
 function StockSearch({ onSelectStock }) {
   const [symbol, setSymbol] = useState('');
@@ -16,8 +14,8 @@ function StockSearch({ onSelectStock }) {
     setError('');
     
     try {
-      const response = await axios.get(`${API_BASE}/api/stocks/${symbol}/latest`);
-      setStock(response.data);
+      const response = await api.getLatestPrice(symbol);
+      setStock(response);
       onSelectStock(symbol);
     } catch (err) {
       setError('Stock not found');
