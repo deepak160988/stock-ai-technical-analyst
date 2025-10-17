@@ -22,10 +22,11 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
 
 logger.info("=" * 80)
 logger.info("Starting Stock AI Technical Analyst API v1.0.0")
