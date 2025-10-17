@@ -233,6 +233,21 @@ const api = {
     }
   },
 
+  // ============== NEW: INDIAN STOCK INDICATORS ==============
+  
+  // Get technical indicators for Indian stocks
+  getIndianIndicators: async (symbol, days = 30) => {
+    try {
+      const response = await axiosInstance.get(`/api/indian/indicators/${symbol}`, {
+        params: { days }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching Indian stock indicators:', error);
+      throw error;
+    }
+  },
+
   // ============== AI & ML API ==============
 
   // AI Query

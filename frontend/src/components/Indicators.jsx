@@ -19,13 +19,23 @@ function Indicators({ symbol, isIndianStock }) {
       setLoading(true);
       setError(null);
       
-      // Fetch indicators - backend should handle both US and Indian stocks
-      const data = await api.getIndicators(symbol, 30);
+      let data;
+      // Use different endpoints based on stock type
+      if (isIndianStock) {
+        console.log(`Fetching Indian stock indicators for ${symbol}`);
+        data = await api.getIndianIndicators(symbol, 30);
+      } else {
+        console.log(`Fetching US stock indicators for ${symbol}`);
+        data = await api.getIndicators(symbol, 30);
+      }
+      
       setIndicators(data);
     } catch (err) {
       // Check if it's a 503 Service Unavailable error
       if (err.response?.status === 503) {
-        setError('Technical indicators service is currently unavailable. Please try again later.');
+        setError('Technical indicators service is currently unavailable. The backend service may not be running or failed to initialize.');
+      } else if (err.response?.status === 404) {
+        setError(`No data found for ${symbol}. Please check if the symbol is correct.`);
       } else {
         const errorMessage = err.response?.data?.detail || err.message || 'Unknown error';
         setError(`Failed to fetch indicators: ${errorMessage}`);

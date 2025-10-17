@@ -183,7 +183,7 @@ async def get_bollinger_bands(symbol: str, days: int = Query(365, ge=1, le=1000)
         prices = df['Close'].tolist()
         upper_bb, middle_bb, lower_bb = indicators_service.calculate_bollinger_bands(prices, window)
         logger.info(f"Calculated Bollinger Bands for {symbol}")
-        return {"symbol": symbol.upper(), "indicator": "bollinger_bands", "window": window, "upper_band": upper_bb, "middle_band": middle_bb, "lower_band": lower_bb, "prices": prices, "data_points": len(prices), "timestamp": datetime.now().isoformat()}
+        return {"symbol": symbol.upper(), "indicator": "bollinger_bands", "window": window, "upper_band": upper_bb, "middle_band": middle_bb, "lower_band": lower_bb, "prices": prices, "data_points": len(upper_bb), "timestamp": datetime.now().isoformat()}
     except HTTPException:
         raise
     except Exception as e:
@@ -217,7 +217,7 @@ async def get_portfolio():
             raise HTTPException(status_code=503, detail="Portfolio service not available")
         portfolio = portfolio_service.get_portfolio()
         logger.info(f"Retrieved portfolio with {len(portfolio.positions)} positions")
-        return {"positions": [{"symbol": p.symbol, "quantity": p.quantity, "buy_price": p.buy_price, "current_price": p.current_price, "buy_date": p.buy_date.isoformat(), "current_value": (p.current_price * p.quantity), "gain_loss": (p.current_price * p.quantity) - (p.buy_price * p.quantity), "gain_loss_percent": ((p.current_price - p.buy_price) / p.buy_price * 100)} for p in portfolio.positions], "total_value": portfolio.total_value, "total_invested": portfolio.total_invested, "total_gain_loss": portfolio.total_gain_loss, "total_gain_loss_percent": portfolio.total_gain_loss_percent, "timestamp": datetime.now().isoformat()}
+        return {"positions": [{"symbol": p.symbol, "quantity": p.quantity, "buy_price": p.buy_price, "current_price": p.current_price, "buy_date": p.buy_date.isoformat(), "current_value": (p.current_price * p.quantity) if p.current_price else 0, "buy_value": p.buy_price * p.quantity, "currency": "USD"} for p in portfolio.positions], "total_value": portfolio.total_value, "total_invested": portfolio.total_invested, "timestamp": datetime.now().isoformat()}
     except HTTPException:
         raise
     except Exception as e:
@@ -338,6 +338,40 @@ async def get_indian_stock_latest_price(symbol: str):
     except Exception as e:
         logger.error(f"Error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+# ============== ADD THIS NEW ENDPOINT HERE ==============
+@app.get("/api/indian/indicators/{symbol}")
+async def get_indian_indicators(symbol: str, days: int = Query(365, ge=1, le=1000)):
+    """Get technical indicators for Indian stocks"""
+    try:
+        if not indian_stock_service or not indicators_service:
+            raise HTTPException(status_code=503, detail="Services not available")
+        
+        # Get Indian stock historical data
+        df = indian_stock_service.get_indian_stock_historical_data(symbol.upper(), days)
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"No data found for Indian stock {symbol}")
+        
+        # Calculate indicators using the same indicators service
+        indicators = indicators_service.get_all_indicators(df)
+        if not indicators:
+            raise HTTPException(status_code=500, detail="Error calculating indicators")
+        
+        logger.info(f"Calculated indicators for Indian stock {symbol}")
+        return {
+            "symbol": symbol.upper(),
+            "indicators": indicators,
+            "data_points": len(df),
+            "currency": "INR",
+            "exchange": "NSE",
+            "timestamp": datetime.now().isoformat()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error calculating Indian stock indicators: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+# ============== END OF NEW ENDPOINT ==============
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
