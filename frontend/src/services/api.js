@@ -1,34 +1,75 @@
 import axios from 'axios';
 
-// Detect environment and set base URL
-const hostname = window.location.hostname;
-const isCodespace = Boolean(process.env.CODESPACE_NAME);
-const baseURL = isCodespace ? `https://${hostname}:8000` : `http://${hostname}:3000`;
+// Detect if running in GitHub Codespaces
+const isCodespaces = window.location.hostname.endsWith('.app.github.dev');
+const BASE_URL = isCodespaces ? 'http://localhost:8000' : 'http://localhost:3000';
 
-const axiosInstance = axios.create({
-    baseURL: baseURL,
-    timeout: 10000, // 10 seconds timeout
+// Axios instance
+const apiClient = axios.create({
+    baseURL: BASE_URL,
 });
 
-// Logging interceptor for request
-axiosInstance.interceptors.request.use((config) => {
-    console.log(`Making request to: ${config.url}`);
-    return config;
-}, (error) => {
-    return Promise.reject(error);
+// Axios interceptors for logging request/response
+apiClient.interceptors.request.use(request => {
+    console.log('Starting Request', request);
+    return request;
 });
 
-// API methods
-const apiMethods = {
-    getMethod1: () => axiosInstance.get('/method1'),
-    getMethod2: () => axiosInstance.get('/method2'),
-    postMethod1: (data) => axiosInstance.post('/method1', data),
-    postMethod2: (data) => axiosInstance.post('/method2', data),
-    putMethod1: (data) => axiosInstance.put('/method1', data),
-    deleteMethod1: (id) => axiosInstance.delete(`/method1/${id}`),
-    getMethod3: () => axiosInstance.get('/method3'),
-    getMethod4: () => axiosInstance.get('/method4'),
-    getMethod5: () => axiosInstance.get('/method5'),
+apiClient.interceptors.response.use(response => {
+    console.log('Response:', response);
+    return response;
+});
+
+// Function to get stock data
+export const getStockData = async (symbol) => {
+    const response = await apiClient.get(`/stocks/${symbol}`);
+    return response.data;
 };
 
-export default apiMethods;
+// Function to get the latest price
+export const getLatestPrice = async (symbol) => {
+    const response = await apiClient.get(`/stocks/${symbol}/latest-price`);
+    return response.data;
+};
+
+// Function to get indicators
+export const getIndicators = async (symbol) => {
+    const response = await apiClient.get(`/stocks/${symbol}/indicators`);
+    return response.data;
+};
+
+// Function to get RSI
+export const getRSI = async (symbol) => {
+    const response = await apiClient.get(`/stocks/${symbol}/rsi`);
+    return response.data;
+};
+
+// Function to get MACD
+export const getMACD = async (symbol) => {
+    const response = await apiClient.get(`/stocks/${symbol}/macd`);
+    return response.data;
+};
+
+// Function to get signals
+export const getSignals = async (symbol) => {
+    const response = await apiClient.get(`/stocks/${symbol}/signals`);
+    return response.data;
+};
+
+// Function to get portfolio
+export const getPortfolio = async () => {
+    const response = await apiClient.get('/portfolio');
+    return response.data;
+};
+
+// Function to get Indian stocks
+export const getIndianStocks = async () => {
+    const response = await apiClient.get('/stocks/indian');
+    return response.data;
+};
+
+// Function to get machine learning predictions
+export const getMLPrediction = async (data) => {
+    const response = await apiClient.post('/ml/predict', data);
+    return response.data;
+};
