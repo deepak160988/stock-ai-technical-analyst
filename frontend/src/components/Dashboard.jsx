@@ -13,6 +13,7 @@ function Dashboard() {
   const [error, setError] = useState(null);
   const [isIndianStock, setIsIndianStock] = useState(false);
   const [indianStocksList, setIndianStocksList] = useState([]);
+  const [showError, setShowError] = useState(true);
 
   // Fetch Indian stocks list on component mount
   useEffect(() => {
@@ -45,10 +46,21 @@ function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [symbol, indianStocksList]);
 
+  // Auto-dismiss error after 10 seconds
+  useEffect(() => {
+    if (error && showError) {
+      const timer = setTimeout(() => {
+        setShowError(false);
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, showError]);
+
   const fetchStockData = async () => {
     try {
       setLoading(true);
       setError(null);
+      setShowError(true); // Reset error visibility
       
       // Check if the symbol is an Indian stock
       const isIndian = indianStocksList.includes(symbol.toUpperCase());
@@ -66,9 +78,13 @@ function Dashboard() {
       }
       
       setStockData(data);
+      // Clear any previous errors on success
+      setError(null);
+      setShowError(false);
     } catch (err) {
       const errorMessage = err.response?.data?.detail || err.message || 'Unknown error';
       setError(`Failed to fetch stock data: ${errorMessage}`);
+      setShowError(true);
       console.error(err);
     } finally {
       setLoading(false);
@@ -77,12 +93,20 @@ function Dashboard() {
 
   const handleSymbolChange = (e) => {
     setSymbol(e.target.value.toUpperCase());
+    // Clear error when user starts typing
+    if (error) {
+      setShowError(false);
+    }
   };
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       fetchStockData();
     }
+  };
+
+  const dismissError = () => {
+    setShowError(false);
   };
 
   return (
@@ -112,7 +136,12 @@ function Dashboard() {
         )}
       </div>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && showError && (
+        <div className="error-message">
+          <span className="error-text">{error}</span>
+          <button className="dismiss-button" onClick={dismissError}>✕</button>
+        </div>
+      )}
 
       {loading && <div className="loading-message">Loading stock data...</div>}
 
@@ -121,7 +150,12 @@ function Dashboard() {
           <StockChart symbol={symbol} data={stockData} isIndianStock={isIndianStock} />
         </div>
         <div className="section">
-          <Indicators symbol={symbol} isIndianStock={isIndianStock} />
+          <Indicators 
+            symbol={symbol} 
+            isIndianStock={isIndianStock} 
+            stockDataLoaded={!!stockData} 
+            key={`${symbol}-${stockData ? 'loaded' : 'empty'}`}
+          />
         </div>
         <div className="section">
           <MLPrediction symbol={symbol} isIndianStock={isIndianStock} />
