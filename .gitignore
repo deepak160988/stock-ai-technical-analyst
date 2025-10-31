@@ -1,3 +1,10 @@
 __pycache__/
 *.py[cod]
 .env
+
+# Frontend build artifacts
+frontend/build/
+frontend/node_modules/.cache/
+
+# Test cache
+.pytest_cache/

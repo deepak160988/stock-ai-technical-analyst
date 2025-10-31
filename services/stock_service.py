@@ -5,11 +5,33 @@ from typing import Optional, Dict, List
 
 logger = logging.getLogger(__name__)
 
+
 class StockService:
     def __init__(self):
         self.cache = {}
-        self.valid_symbols = ['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'AMZN', 'META', 'NVDA', 'JPM', 'V', 'JNJ', 'WMT', 'PG', 'KO', 'DIS', 'NFLX', 'AMD', 'INTC', 'CSCO', 'ADBE', 'CRM']
-    
+        self.valid_symbols = [
+            "AAPL",
+            "MSFT",
+            "GOOGL",
+            "TSLA",
+            "AMZN",
+            "META",
+            "NVDA",
+            "JPM",
+            "V",
+            "JNJ",
+            "WMT",
+            "PG",
+            "KO",
+            "DIS",
+            "NFLX",
+            "AMD",
+            "INTC",
+            "CSCO",
+            "ADBE",
+            "CRM",
+        ]
+
     def validate_symbol(self, symbol: str) -> bool:
         """Validate if stock symbol is valid"""
         try:
@@ -18,93 +40,95 @@ class StockService:
             # Try to fetch basic info to validate symbol
             ticker = yf.Ticker(symbol)
             info = ticker.info
-            return info.get('symbol') is not None or len(symbol) <= 5
+            return info.get("symbol") is not None or len(symbol) <= 5
         except Exception as e:
             logger.warning(f"Symbol validation failed for {symbol}: {e}")
             return len(symbol) >= 1 and len(symbol) <= 5
-    
+
     def get_historical_data(
-        self, 
-        symbol: str, 
-        days: int = 365, 
+        self,
+        symbol: str,
+        days: int = 365,
         period: Optional[str] = None,
-        interval: Optional[str] = None
+        interval: Optional[str] = None,
     ) -> pd.DataFrame:
         """
         Get historical stock data
-        
+
         Args:
             symbol: Stock symbol
             days: Number of days (used if period not provided)
             period: yfinance period (e.g., '7d', '1mo', '1y', 'max')
             interval: yfinance interval (e.g., '1m', '1h', '1d')
-        
+
         Returns:
             DataFrame with historical data
         """
         try:
             if not symbol:
                 return pd.DataFrame()
-            
+
             # Determine period and interval to use
             if period is None:
                 period = f"{days}d"
             if interval is None:
-                interval = '1d'
-            
+                interval = "1d"
+
             # Check cache first - include period and interval in cache key
             cache_key = f"{symbol}_{period}_{interval}"
             if cache_key in self.cache:
                 logger.info(f"Using cached data for {symbol}")
                 return self.cache[cache_key]
-            
+
             # Fetch data from yfinance
             ticker = yf.Ticker(symbol)
             df = ticker.history(period=period, interval=interval)
-            
+
             if df.empty:
                 logger.warning(f"No data found for symbol {symbol}")
                 return pd.DataFrame()
-            
+
             # Cache the data
             self.cache[cache_key] = df
-            logger.info(f"Retrieved {len(df)} rows of data for {symbol} (period={period}, interval={interval})")
+            logger.info(
+                f"Retrieved {len(df)} rows of data for {symbol} (period={period}, interval={interval})"
+            )
             return df
-        
+
         except Exception as e:
             logger.error(f"Error fetching historical data for {symbol}: {e}")
             return pd.DataFrame()
-    
+
     def get_latest_price(self, symbol: str) -> Optional[float]:
         """Get latest stock price"""
         try:
             if not symbol:
                 return None
-            
+
             ticker = yf.Ticker(symbol)
             data = ticker.history(period="1d")
-            
+
             if data.empty:
                 logger.warning(f"No price data found for {symbol}")
                 return None
-            
-            latest_price = data['Close'].iloc[-1]
+
+            latest_price = data["Close"].iloc[-1]
             logger.info(f"Latest price for {symbol}: ${latest_price}")
             return float(latest_price)
-        
+
         except Exception as e:
             logger.error(f"Error fetching latest price for {symbol}: {e}")
             return None
-    
+
     def get_stock_info(self, symbol: str) -> Dict:
         """Get stock information"""
         try:
             if not symbol:
                 return {}
-            
+
             ticker = yf.Ticker(symbol)
             info = ticker.info
-            
+
             stock_info = {
                 "symbol": symbol,
                 "name": info.get("longName", info.get("shortName", symbol)),
@@ -118,10 +142,10 @@ class StockService:
                 "average_volume": info.get("averageVolume", None),
                 "beta": info.get("beta", None),
             }
-            
+
             logger.info(f"Retrieved info for {symbol}")
             return stock_info
-        
+
         except Exception as e:
             logger.error(f"Error fetching stock info for {symbol}: {e}")
             return {
@@ -130,46 +154,47 @@ class StockService:
                 "sector": "Unknown",
                 "industry": "Unknown",
             }
-    
+
     def get_price_change(self, symbol: str, days: int = 1) -> Optional[float]:
         """Get price change percentage"""
         try:
             if not symbol:
                 return None
-            
+
             ticker = yf.Ticker(symbol)
             data = ticker.history(period=f"{days + 1}d")
-            
+
             if len(data) < 2:
                 return None
-            
-            old_price = data['Close'].iloc[0]
-            new_price = data['Close'].iloc[-1]
-            
+
+            old_price = data["Close"].iloc[0]
+            new_price = data["Close"].iloc[-1]
+
             change_percent = ((new_price - old_price) / old_price) * 100
             logger.info(f"Price change for {symbol} ({days}d): {change_percent:.2f}%")
             return float(change_percent)
-        
+
         except Exception as e:
             logger.error(f"Error calculating price change for {symbol}: {e}")
             return None
-    
+
     def get_moving_average(self, symbol: str, window: int = 20) -> Optional[float]:
         """Get moving average"""
         try:
             if not symbol:
                 return None
-            
+
             df = self.get_historical_data(symbol, days=window + 10)
             if df.empty or len(df) < window:
                 return None
-            
-            ma = df['Close'].rolling(window=window).mean().iloc[-1]
+
+            ma = df["Close"].rolling(window=window).mean().iloc[-1]
             logger.info(f"Moving average ({window}d) for {symbol}: ${ma}")
             return float(ma)
-        
+
         except Exception as e:
             logger.error(f"Error calculating moving average for {symbol}: {e}")
             return None
+
 
 stock_service = StockService()
