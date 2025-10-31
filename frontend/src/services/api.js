@@ -52,11 +52,15 @@ const api = {
   // ============== US STOCKS API ==============
   
   // Get historical stock data
-  getStockData: async (symbol, days = 30) => {
+  getStockData: async (symbol, days = 30, timeframe = null) => {
     try {
-      const response = await axiosInstance.get(`/api/stocks/${symbol}`, {
-        params: { days }
-      });
+      const params = {};
+      if (timeframe) {
+        params.timeframe = timeframe;
+      } else {
+        params.days = days;
+      }
+      const response = await axiosInstance.get(`/api/stocks/${symbol}`, { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching stock data:', error);
@@ -210,11 +214,15 @@ const api = {
   },
 
   // Get Indian stock historical data
-  getIndianStockData: async (symbol, days = 30) => {
+  getIndianStockData: async (symbol, days = 30, timeframe = null) => {
     try {
-      const response = await axiosInstance.get(`/api/indian/stocks/${symbol}`, {
-        params: { days }
-      });
+      const params = {};
+      if (timeframe) {
+        params.timeframe = timeframe;
+      } else {
+        params.days = days;
+      }
+      const response = await axiosInstance.get(`/api/indian/stocks/${symbol}`, { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching Indian stock data:', error);

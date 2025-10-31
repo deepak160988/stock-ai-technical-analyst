@@ -31,7 +31,7 @@ function StockChart({ symbol, data, isIndianStock }) {
 
   return (
     <div className="section-full">
-      <h3>📊 Stock Chart - {symbol}</h3>
+      <h3>📊 Stock Chart - {symbol} {data.timeframe ? `(${data.timeframe})` : ''}</h3>
       <div className="stock-info">
         <p className="current-price">
           <strong>Current Price:</strong> {currency.symbol}{currency.price?.toFixed(2)} {currency.label}
@@ -39,6 +39,11 @@ function StockChart({ symbol, data, isIndianStock }) {
         <p>
           <strong>Exchange:</strong> {isIndianStock ? '🇮🇳 NSE' : '🇺🇸 NASDAQ/NYSE'}
         </p>
+        {data.timeframe && (
+          <p>
+            <strong>Timeframe:</strong> {data.timeframe}
+          </p>
+        )}
         <p>
           <strong>Data Points:</strong> {data.data_points}
         </p>
