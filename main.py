@@ -5,6 +5,7 @@ import logging
 from datetime import datetime
 import sys
 import os
+from typing import Optional
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -81,19 +82,21 @@ async def health_check():
     return {"status": "healthy", "service": "Stock AI Technical Analyst API", "version": "1.0.0", "timestamp": datetime.now().isoformat()}
 
 @app.get("/api/stocks/{symbol}")
-async def get_stock_data(symbol: str, days: int = Query(365, ge=1, le=1000)):
+async def get_stock_data(symbol: str, days: int = Query(365, ge=1, le=1000), timeframe: Optional[str] = Query(None, description="Timeframe (e.g., '1d', '5d', '1mo', '3mo', '6mo', '1y', '5y', 'max')")):
     try:
         if not stock_service:
             raise HTTPException(status_code=503, detail="Stock service not available")
         if not stock_service.validate_symbol(symbol.upper()):
             raise HTTPException(status_code=404, detail=f"Symbol {symbol} not found")
-        df = stock_service.get_historical_data(symbol.upper(), days)
+        
+        # Get historical data with timeframe or days
+        df = stock_service.get_historical_data(symbol.upper(), days=days, timeframe=timeframe)
         if df.empty:
             raise HTTPException(status_code=404, detail=f"No data found for symbol {symbol}")
         latest_price = df['Close'].iloc[-1]
         prices = [{"date": idx.isoformat(), "open": float(row['Open']), "high": float(row['High']), "low": float(row['Low']), "close": float(row['Close']), "volume": int(row['Volume'])} for idx, row in df.iterrows()]
         logger.info(f"Retrieved {len(prices)} days of data for {symbol}")
-        return {"symbol": symbol.upper(), "prices": prices, "current_price": float(latest_price), "currency": "USD", "last_updated": datetime.now().isoformat(), "data_points": len(prices)}
+        return {"symbol": symbol.upper(), "prices": prices, "current_price": float(latest_price), "currency": "USD", "last_updated": datetime.now().isoformat(), "data_points": len(prices), "timeframe": timeframe or f"{days}d"}
     except HTTPException:
         raise
     except Exception as e:
@@ -118,18 +121,18 @@ async def get_latest_price(symbol: str):
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 @app.get("/api/indicators/{symbol}")
-async def get_indicators(symbol: str, days: int = Query(365, ge=1, le=1000)):
+async def get_indicators(symbol: str, days: int = Query(365, ge=1, le=1000), timeframe: Optional[str] = Query(None, description="Timeframe (e.g., '1d', '5d', '1mo', '3mo', '6mo', '1y', '5y', 'max')")):
     try:
         if not stock_service or not indicators_service:
             raise HTTPException(status_code=503, detail="Services not available")
-        df = stock_service.get_historical_data(symbol.upper(), days)
+        df = stock_service.get_historical_data(symbol.upper(), days=days, timeframe=timeframe)
         if df.empty:
             raise HTTPException(status_code=404, detail=f"No data found for symbol {symbol}")
         indicators = indicators_service.get_all_indicators(df)
         if not indicators:
             raise HTTPException(status_code=500, detail="Error calculating indicators")
         logger.info(f"Calculated indicators for {symbol}")
-        return {"symbol": symbol.upper(), "indicators": indicators, "data_points": len(df), "timestamp": datetime.now().isoformat()}
+        return {"symbol": symbol.upper(), "indicators": indicators, "data_points": len(df), "timestamp": datetime.now().isoformat(), "timeframe": timeframe or f"{days}d"}
     except HTTPException:
         raise
     except Exception as e:
@@ -137,17 +140,17 @@ async def get_indicators(symbol: str, days: int = Query(365, ge=1, le=1000)):
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 @app.get("/api/indicators/{symbol}/rsi")
-async def get_rsi(symbol: str, days: int = Query(365, ge=1, le=1000), window: int = Query(14, ge=5, le=100)):
+async def get_rsi(symbol: str, days: int = Query(365, ge=1, le=1000), window: int = Query(14, ge=5, le=100), timeframe: Optional[str] = Query(None, description="Timeframe (e.g., '1d', '5d', '1mo', '3mo', '6mo', '1y', '5y', 'max')")):
     try:
         if not stock_service or not indicators_service:
             raise HTTPException(status_code=503, detail="Services not available")
-        df = stock_service.get_historical_data(symbol.upper(), days)
+        df = stock_service.get_historical_data(symbol.upper(), days=days, timeframe=timeframe)
         if df.empty:
             raise HTTPException(status_code=404, detail=f"No data found for symbol {symbol}")
         prices = df['Close'].tolist()
         rsi, overbought, oversold = indicators_service.calculate_rsi(prices, window)
         logger.info(f"Calculated RSI for {symbol}")
-        return {"symbol": symbol.upper(), "indicator": "rsi", "window": window, "values": rsi, "overbought_flags": overbought, "oversold_flags": oversold, "data_points": len(rsi), "latest_rsi": rsi[-1] if rsi else None, "timestamp": datetime.now().isoformat()}
+        return {"symbol": symbol.upper(), "indicator": "rsi", "window": window, "values": rsi, "overbought_flags": overbought, "oversold_flags": oversold, "data_points": len(rsi), "latest_rsi": rsi[-1] if rsi else None, "timestamp": datetime.now().isoformat(), "timeframe": timeframe or f"{days}d"}
     except HTTPException:
         raise
     except Exception as e:
@@ -155,17 +158,17 @@ async def get_rsi(symbol: str, days: int = Query(365, ge=1, le=1000), window: in
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 @app.get("/api/indicators/{symbol}/macd")
-async def get_macd(symbol: str, days: int = Query(365, ge=1, le=1000)):
+async def get_macd(symbol: str, days: int = Query(365, ge=1, le=1000), timeframe: Optional[str] = Query(None, description="Timeframe (e.g., '1d', '5d', '1mo', '3mo', '6mo', '1y', '5y', 'max')")):
     try:
         if not stock_service or not indicators_service:
             raise HTTPException(status_code=503, detail="Services not available")
-        df = stock_service.get_historical_data(symbol.upper(), days)
+        df = stock_service.get_historical_data(symbol.upper(), days=days, timeframe=timeframe)
         if df.empty:
             raise HTTPException(status_code=404, detail=f"No data found for symbol {symbol}")
         prices = df['Close'].tolist()
         macd_line, signal_line, histogram = indicators_service.calculate_macd(prices)
         logger.info(f"Calculated MACD for {symbol}")
-        return {"symbol": symbol.upper(), "indicator": "macd", "macd_line": macd_line, "signal_line": signal_line, "histogram": histogram, "data_points": len(macd_line), "timestamp": datetime.now().isoformat()}
+        return {"symbol": symbol.upper(), "indicator": "macd", "macd_line": macd_line, "signal_line": signal_line, "histogram": histogram, "data_points": len(macd_line), "timestamp": datetime.now().isoformat(), "timeframe": timeframe or f"{days}d"}
     except HTTPException:
         raise
     except Exception as e:
@@ -173,17 +176,17 @@ async def get_macd(symbol: str, days: int = Query(365, ge=1, le=1000)):
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 @app.get("/api/indicators/{symbol}/bollinger-bands")
-async def get_bollinger_bands(symbol: str, days: int = Query(365, ge=1, le=1000), window: int = Query(20, ge=5, le=100)):
+async def get_bollinger_bands(symbol: str, days: int = Query(365, ge=1, le=1000), window: int = Query(20, ge=5, le=100), timeframe: Optional[str] = Query(None, description="Timeframe (e.g., '1d', '5d', '1mo', '3mo', '6mo', '1y', '5y', 'max')")):
     try:
         if not stock_service or not indicators_service:
             raise HTTPException(status_code=503, detail="Services not available")
-        df = stock_service.get_historical_data(symbol.upper(), days)
+        df = stock_service.get_historical_data(symbol.upper(), days=days, timeframe=timeframe)
         if df.empty:
             raise HTTPException(status_code=404, detail=f"No data found for symbol {symbol}")
         prices = df['Close'].tolist()
         upper_bb, middle_bb, lower_bb = indicators_service.calculate_bollinger_bands(prices, window)
         logger.info(f"Calculated Bollinger Bands for {symbol}")
-        return {"symbol": symbol.upper(), "indicator": "bollinger_bands", "window": window, "upper_band": upper_bb, "middle_band": middle_bb, "lower_band": lower_bb, "prices": prices, "data_points": len(upper_bb), "timestamp": datetime.now().isoformat()}
+        return {"symbol": symbol.upper(), "indicator": "bollinger_bands", "window": window, "upper_band": upper_bb, "middle_band": middle_bb, "lower_band": lower_bb, "prices": prices, "data_points": len(upper_bb), "timestamp": datetime.now().isoformat(), "timeframe": timeframe or f"{days}d"}
     except HTTPException:
         raise
     except Exception as e:
@@ -191,11 +194,11 @@ async def get_bollinger_bands(symbol: str, days: int = Query(365, ge=1, le=1000)
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 @app.get("/api/signals/{symbol}")
-async def get_signals(symbol: str, days: int = Query(365, ge=1, le=1000)):
+async def get_signals(symbol: str, days: int = Query(365, ge=1, le=1000), timeframe: Optional[str] = Query(None, description="Timeframe (e.g., '1d', '5d', '1mo', '3mo', '6mo', '1y', '5y', 'max')")):
     try:
         if not stock_service or not indicators_service or not signals_service:
             raise HTTPException(status_code=503, detail="Services not available")
-        df = stock_service.get_historical_data(symbol.upper(), days)
+        df = stock_service.get_historical_data(symbol.upper(), days=days, timeframe=timeframe)
         if df.empty:
             raise HTTPException(status_code=404, detail=f"No data found for symbol {symbol}")
         indicators = indicators_service.get_all_indicators(df)
@@ -203,7 +206,7 @@ async def get_signals(symbol: str, days: int = Query(365, ge=1, le=1000)):
             raise HTTPException(status_code=500, detail="Error calculating indicators")
         signal_data = signals_service.generate_signal(indicators)
         logger.info(f"Generated {signal_data['signal']} signal for {symbol}")
-        return {"symbol": symbol.upper(), "signal": signal_data['signal'], "confidence": round(signal_data['confidence'], 2), "reasons": signal_data['reasons'], "analysis": signal_data['analysis'], "timestamp": datetime.now().isoformat()}
+        return {"symbol": symbol.upper(), "signal": signal_data['signal'], "confidence": round(signal_data['confidence'], 2), "reasons": signal_data['reasons'], "analysis": signal_data['analysis'], "timestamp": datetime.now().isoformat(), "timeframe": timeframe or f"{days}d"}
     except HTTPException:
         raise
     except Exception as e:
@@ -303,19 +306,19 @@ async def get_indian_stocks_list():
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 @app.get("/api/indian/stocks/{symbol}")
-async def get_indian_stock_data(symbol: str, days: int = Query(365, ge=1, le=1000)):
+async def get_indian_stock_data(symbol: str, days: int = Query(365, ge=1, le=1000), timeframe: Optional[str] = Query(None, description="Timeframe (e.g., '1d', '5d', '1mo', '3mo', '6mo', '1y', '5y', 'max')")):
     try:
         if not indian_stock_service:
             raise HTTPException(status_code=503, detail="Indian stock service not available")
         if not indian_stock_service.validate_indian_symbol(symbol.upper()):
             raise HTTPException(status_code=404, detail=f"Indian stock symbol {symbol} not found")
-        df = indian_stock_service.get_indian_stock_historical_data(symbol.upper(), days)
+        df = indian_stock_service.get_indian_stock_historical_data(symbol.upper(), days=days, timeframe=timeframe)
         if df.empty:
             raise HTTPException(status_code=404, detail=f"No data found for Indian stock {symbol}")
         latest_price = df['Close'].iloc[-1]
         prices = [{"date": idx.isoformat(), "open": float(row['Open']), "high": float(row['High']), "low": float(row['Low']), "close": float(row['Close']), "volume": int(row['Volume'])} for idx, row in df.iterrows()]
         logger.info(f"Retrieved {len(prices)} days of data for Indian stock {symbol}")
-        return {"symbol": symbol.upper(), "prices": prices, "current_price_inr": float(latest_price), "currency": "INR", "exchange": "NSE", "last_updated": datetime.now().isoformat(), "data_points": len(prices)}
+        return {"symbol": symbol.upper(), "prices": prices, "current_price_inr": float(latest_price), "currency": "INR", "exchange": "NSE", "last_updated": datetime.now().isoformat(), "data_points": len(prices), "timeframe": timeframe or f"{days}d"}
     except HTTPException:
         raise
     except Exception as e:
@@ -341,14 +344,14 @@ async def get_indian_stock_latest_price(symbol: str):
 
 # ============== ADD THIS NEW ENDPOINT HERE ==============
 @app.get("/api/indian/indicators/{symbol}")
-async def get_indian_indicators(symbol: str, days: int = Query(365, ge=1, le=1000)):
+async def get_indian_indicators(symbol: str, days: int = Query(365, ge=1, le=1000), timeframe: Optional[str] = Query(None, description="Timeframe (e.g., '1d', '5d', '1mo', '3mo', '6mo', '1y', '5y', 'max')")):
     """Get technical indicators for Indian stocks"""
     try:
         if not indian_stock_service or not indicators_service:
             raise HTTPException(status_code=503, detail="Services not available")
         
         # Get Indian stock historical data
-        df = indian_stock_service.get_indian_stock_historical_data(symbol.upper(), days)
+        df = indian_stock_service.get_indian_stock_historical_data(symbol.upper(), days=days, timeframe=timeframe)
         if df.empty:
             raise HTTPException(status_code=404, detail=f"No data found for Indian stock {symbol}")
         
@@ -364,7 +367,8 @@ async def get_indian_indicators(symbol: str, days: int = Query(365, ge=1, le=100
             "data_points": len(df),
             "currency": "INR",
             "exchange": "NSE",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
+            "timeframe": timeframe or f"{days}d"
         }
     except HTTPException:
         raise

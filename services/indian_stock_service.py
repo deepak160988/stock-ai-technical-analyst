@@ -2,6 +2,13 @@ import yfinance as yf
 import pandas as pd
 import logging
 from typing import Optional, Dict, List
+import sys
+import os
+
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from utils.timeframe_mapper import map_timeframe
 
 logger = logging.getLogger(__name__)
 
@@ -75,26 +82,49 @@ class IndianStockService:
             logger.warning(f"Indian symbol validation failed for {symbol}: {e}")
             return len(symbol) >= 1 and len(symbol) <= 20
     
-    def get_indian_stock_historical_data(self, symbol: str, days: int = 365) -> pd.DataFrame:
-        """Get historical data for Indian stock"""
+    def get_indian_stock_historical_data(self, symbol: str, days: int = 365, timeframe: Optional[str] = None) -> pd.DataFrame:
+        """Get historical data for Indian stock
+        
+        Args:
+            symbol: Stock symbol
+            days: Number of days (used if timeframe is not specified)
+            timeframe: Timeframe string (e.g., '1d', '1mo', '1y'). If provided, overrides days parameter.
+        
+        Returns:
+            DataFrame with historical stock data
+        """
         try:
             nse_symbol = self.get_nse_symbol(symbol)
             
-            cache_key = f"{nse_symbol}_{days}"
+            # Determine period and interval based on timeframe or days
+            if timeframe:
+                # Use timeframe mapper for period/interval
+                params = map_timeframe(timeframe)
+                period = params['period']
+                interval = params['interval']
+                cache_key = f"{nse_symbol}_{timeframe}"
+            else:
+                # Fallback to legacy days-based approach
+                period = f"{days}d"
+                interval = None
+                cache_key = f"{nse_symbol}_{days}"
+            
             if cache_key in self.cache:
                 logger.info(f"Using cached data for {nse_symbol}")
                 return self.cache[cache_key]
             
             ticker = yf.Ticker(nse_symbol)
-            period = f"{days}d"
-            df = ticker.history(period=period)
+            if interval:
+                df = ticker.history(period=period, interval=interval)
+            else:
+                df = ticker.history(period=period)
             
             if df.empty:
                 logger.warning(f"No data found for Indian stock {nse_symbol}")
                 return pd.DataFrame()
             
             self.cache[cache_key] = df
-            logger.info(f"Retrieved {len(df)} rows of data for {nse_symbol}")
+            logger.info(f"Retrieved {len(df)} rows of data for {nse_symbol} (period={period}, interval={interval or 'default'})")
             return df
         
         except Exception as e:
