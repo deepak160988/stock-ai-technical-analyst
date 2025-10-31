@@ -23,22 +23,44 @@ class StockService:
             logger.warning(f"Symbol validation failed for {symbol}: {e}")
             return len(symbol) >= 1 and len(symbol) <= 5
     
-    def get_historical_data(self, symbol: str, days: int = 365) -> pd.DataFrame:
-        """Get historical stock data"""
+    def get_historical_data(
+        self, 
+        symbol: str, 
+        days: int = 365, 
+        period: Optional[str] = None,
+        interval: Optional[str] = None
+    ) -> pd.DataFrame:
+        """
+        Get historical stock data
+        
+        Args:
+            symbol: Stock symbol
+            days: Number of days (used if period not provided)
+            period: yfinance period (e.g., '7d', '1mo', '1y', 'max')
+            interval: yfinance interval (e.g., '1m', '1h', '1d')
+        
+        Returns:
+            DataFrame with historical data
+        """
         try:
             if not symbol:
                 return pd.DataFrame()
             
-            # Check cache first
-            cache_key = f"{symbol}_{days}"
+            # Determine period and interval to use
+            if period is None:
+                period = f"{days}d"
+            if interval is None:
+                interval = '1d'
+            
+            # Check cache first - include period and interval in cache key
+            cache_key = f"{symbol}_{period}_{interval}"
             if cache_key in self.cache:
                 logger.info(f"Using cached data for {symbol}")
                 return self.cache[cache_key]
             
             # Fetch data from yfinance
             ticker = yf.Ticker(symbol)
-            period = f"{days}d"
-            df = ticker.history(period=period)
+            df = ticker.history(period=period, interval=interval)
             
             if df.empty:
                 logger.warning(f"No data found for symbol {symbol}")
@@ -46,7 +68,7 @@ class StockService:
             
             # Cache the data
             self.cache[cache_key] = df
-            logger.info(f"Retrieved {len(df)} rows of data for {symbol}")
+            logger.info(f"Retrieved {len(df)} rows of data for {symbol} (period={period}, interval={interval})")
             return df
         
         except Exception as e:

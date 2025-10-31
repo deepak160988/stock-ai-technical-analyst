@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import logging
 from datetime import datetime
+from typing import Optional
 import sys
 import os
 
@@ -81,19 +82,36 @@ async def health_check():
     return {"status": "healthy", "service": "Stock AI Technical Analyst API", "version": "1.0.0", "timestamp": datetime.now().isoformat()}
 
 @app.get("/api/stocks/{symbol}")
-async def get_stock_data(symbol: str, days: int = Query(365, ge=1, le=1000)):
+async def get_stock_data(
+    symbol: str, 
+    days: int = Query(365, ge=1, le=1000),
+    timeframe: Optional[str] = Query(None, description="Timeframe: 1m, 3m, 5m, 15m, 30m, 1h, 4h, 1d, 1w, 1mo")
+):
     try:
         if not stock_service:
             raise HTTPException(status_code=503, detail="Stock service not available")
         if not stock_service.validate_symbol(symbol.upper()):
             raise HTTPException(status_code=404, detail=f"Symbol {symbol} not found")
-        df = stock_service.get_historical_data(symbol.upper(), days)
+        
+        # Import timeframe mapper
+        from services.timeframe_mapper import timeframe_mapper
+        
+        # If timeframe provided, use it; otherwise use days parameter
+        period = None
+        interval = None
+        if timeframe:
+            try:
+                period, interval = timeframe_mapper.map_timeframe(timeframe)
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+        
+        df = stock_service.get_historical_data(symbol.upper(), days, period=period, interval=interval)
         if df.empty:
             raise HTTPException(status_code=404, detail=f"No data found for symbol {symbol}")
         latest_price = df['Close'].iloc[-1]
         prices = [{"date": idx.isoformat(), "open": float(row['Open']), "high": float(row['High']), "low": float(row['Low']), "close": float(row['Close']), "volume": int(row['Volume'])} for idx, row in df.iterrows()]
         logger.info(f"Retrieved {len(prices)} days of data for {symbol}")
-        return {"symbol": symbol.upper(), "prices": prices, "current_price": float(latest_price), "currency": "USD", "last_updated": datetime.now().isoformat(), "data_points": len(prices)}
+        return {"symbol": symbol.upper(), "prices": prices, "current_price": float(latest_price), "currency": "USD", "last_updated": datetime.now().isoformat(), "data_points": len(prices), "timeframe": timeframe}
     except HTTPException:
         raise
     except Exception as e:
@@ -303,19 +321,36 @@ async def get_indian_stocks_list():
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 @app.get("/api/indian/stocks/{symbol}")
-async def get_indian_stock_data(symbol: str, days: int = Query(365, ge=1, le=1000)):
+async def get_indian_stock_data(
+    symbol: str,
+    days: int = Query(365, ge=1, le=1000),
+    timeframe: Optional[str] = Query(None, description="Timeframe: 1m, 3m, 5m, 15m, 30m, 1h, 4h, 1d, 1w, 1mo")
+):
     try:
         if not indian_stock_service:
             raise HTTPException(status_code=503, detail="Indian stock service not available")
         if not indian_stock_service.validate_indian_symbol(symbol.upper()):
             raise HTTPException(status_code=404, detail=f"Indian stock symbol {symbol} not found")
-        df = indian_stock_service.get_indian_stock_historical_data(symbol.upper(), days)
+        
+        # Import timeframe mapper
+        from services.timeframe_mapper import timeframe_mapper
+        
+        # If timeframe provided, use it; otherwise use days parameter
+        period = None
+        interval = None
+        if timeframe:
+            try:
+                period, interval = timeframe_mapper.map_timeframe(timeframe)
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+        
+        df = indian_stock_service.get_indian_stock_historical_data(symbol.upper(), days, period=period, interval=interval)
         if df.empty:
             raise HTTPException(status_code=404, detail=f"No data found for Indian stock {symbol}")
         latest_price = df['Close'].iloc[-1]
         prices = [{"date": idx.isoformat(), "open": float(row['Open']), "high": float(row['High']), "low": float(row['Low']), "close": float(row['Close']), "volume": int(row['Volume'])} for idx, row in df.iterrows()]
         logger.info(f"Retrieved {len(prices)} days of data for Indian stock {symbol}")
-        return {"symbol": symbol.upper(), "prices": prices, "current_price_inr": float(latest_price), "currency": "INR", "exchange": "NSE", "last_updated": datetime.now().isoformat(), "data_points": len(prices)}
+        return {"symbol": symbol.upper(), "prices": prices, "current_price_inr": float(latest_price), "currency": "INR", "exchange": "NSE", "last_updated": datetime.now().isoformat(), "data_points": len(prices), "timeframe": timeframe}
     except HTTPException:
         raise
     except Exception as e:

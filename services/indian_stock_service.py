@@ -75,26 +75,48 @@ class IndianStockService:
             logger.warning(f"Indian symbol validation failed for {symbol}: {e}")
             return len(symbol) >= 1 and len(symbol) <= 20
     
-    def get_indian_stock_historical_data(self, symbol: str, days: int = 365) -> pd.DataFrame:
-        """Get historical data for Indian stock"""
+    def get_indian_stock_historical_data(
+        self,
+        symbol: str,
+        days: int = 365,
+        period: Optional[str] = None,
+        interval: Optional[str] = None
+    ) -> pd.DataFrame:
+        """
+        Get historical data for Indian stock
+        
+        Args:
+            symbol: Indian stock symbol
+            days: Number of days (used if period not provided)
+            period: yfinance period (e.g., '7d', '1mo', '1y', 'max')
+            interval: yfinance interval (e.g., '1m', '1h', '1d')
+        
+        Returns:
+            DataFrame with historical data
+        """
         try:
             nse_symbol = self.get_nse_symbol(symbol)
             
-            cache_key = f"{nse_symbol}_{days}"
+            # Determine period and interval to use
+            if period is None:
+                period = f"{days}d"
+            if interval is None:
+                interval = '1d'
+            
+            cache_key = f"{nse_symbol}_{period}_{interval}"
             if cache_key in self.cache:
                 logger.info(f"Using cached data for {nse_symbol}")
                 return self.cache[cache_key]
             
             ticker = yf.Ticker(nse_symbol)
-            period = f"{days}d"
-            df = ticker.history(period=period)
+            df = ticker.history(period=period, interval=interval)
             
             if df.empty:
                 logger.warning(f"No data found for Indian stock {nse_symbol}")
                 return pd.DataFrame()
             
             self.cache[cache_key] = df
-            logger.info(f"Retrieved {len(df)} rows of data for {nse_symbol}")
+            logger.info(f"Retrieved {len(df)} rows of data for {nse_symbol} (period={period}, interval={interval})")
             return df
         
         except Exception as e:
