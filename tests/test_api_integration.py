@@ -22,11 +22,20 @@ client = TestClient(app)
 def create_mock_dataframe(days=30):
     """Create a mock DataFrame that simulates stock data"""
     dates = pd.date_range(end=datetime.now(), periods=days, freq='D')
+    
+    # Generate realistic OHLC data
+    opens = np.random.uniform(100, 200, days)
+    closes = opens + np.random.uniform(-10, 10, days)
+    
+    # Ensure High is the maximum and Low is the minimum
+    highs = np.maximum(opens, closes) + np.random.uniform(0, 5, days)
+    lows = np.minimum(opens, closes) - np.random.uniform(0, 5, days)
+    
     data = {
-        'Open': np.random.uniform(100, 200, days),
-        'High': np.random.uniform(100, 200, days),
-        'Low': np.random.uniform(100, 200, days),
-        'Close': np.random.uniform(100, 200, days),
+        'Open': opens,
+        'High': highs,
+        'Low': lows,
+        'Close': closes,
         'Volume': np.random.randint(1000000, 10000000, days),
     }
     return pd.DataFrame(data, index=dates)
