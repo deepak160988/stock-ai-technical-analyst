@@ -4,7 +4,7 @@ __pycache__/
 
 # Frontend build artifacts
 frontend/build/
-frontend/node_modules/.cache/
+frontend/node_modules/
 
 # Test cache
 .pytest_cache/
