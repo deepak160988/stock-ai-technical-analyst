@@ -4,6 +4,7 @@ import StockChart from './StockChart';
 import Indicators from './Indicators';
 import MLPrediction from './MLPrediction';
 import Portfolio from './Portfolio';
+import TimeframeSelector from './TimeframeSelector';
 import api from '../services/api';
 
 function Dashboard() {
@@ -14,6 +15,7 @@ function Dashboard() {
   const [isIndianStock, setIsIndianStock] = useState(false);
   const [indianStocksList, setIndianStocksList] = useState([]);
   const [showError, setShowError] = useState(true);
+  const [selectedTimeframe, setSelectedTimeframe] = useState('1d');
 
   // Fetch Indian stocks list on component mount
   useEffect(() => {
@@ -38,13 +40,13 @@ function Dashboard() {
     loadIndianStocks();
   }, []);
 
-  // Fetch stock data when symbol changes
+  // Fetch stock data when symbol or timeframe changes
   useEffect(() => {
     if (indianStocksList.length > 0) {
       fetchStockData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbol, indianStocksList]);
+  }, [symbol, indianStocksList, selectedTimeframe]);
 
   // Auto-dismiss error after 10 seconds
   useEffect(() => {
@@ -69,12 +71,12 @@ function Dashboard() {
       let data;
       if (isIndian) {
         // Fetch Indian stock data
-        console.log(`Fetching Indian stock data for ${symbol}`);
-        data = await api.getIndianStockData(symbol, 30);
+        console.log(`Fetching Indian stock data for ${symbol} with timeframe ${selectedTimeframe}`);
+        data = await api.getIndianStockData(symbol, 30, selectedTimeframe);
       } else {
         // Fetch US stock data
-        console.log(`Fetching US stock data for ${symbol}`);
-        data = await api.getStockData(symbol, 30);
+        console.log(`Fetching US stock data for ${symbol} with timeframe ${selectedTimeframe}`);
+        data = await api.getStockData(symbol, 30, selectedTimeframe);
       }
       
       setStockData(data);
@@ -103,6 +105,10 @@ function Dashboard() {
     if (e.key === 'Enter') {
       fetchStockData();
     }
+  };
+
+  const handleTimeframeChange = (timeframe) => {
+    setSelectedTimeframe(timeframe);
   };
 
   const dismissError = () => {
@@ -135,6 +141,11 @@ function Dashboard() {
           </span>
         )}
       </div>
+
+      <TimeframeSelector 
+        selectedTimeframe={selectedTimeframe}
+        onTimeframeChange={handleTimeframeChange}
+      />
 
       {error && showError && (
         <div className="error-message">
