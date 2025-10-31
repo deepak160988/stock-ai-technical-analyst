@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import './Indicators.css';
 
-function Indicators({ symbol, isIndianStock, stockDataLoaded }) {
+function Indicators({ symbol, isIndianStock, stockDataLoaded, timeframe = '1mo' }) {
   const [indicators, setIndicators] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -13,7 +13,7 @@ function Indicators({ symbol, isIndianStock, stockDataLoaded }) {
       fetchIndicators();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbol, isIndianStock, stockDataLoaded]);
+  }, [symbol, isIndianStock, stockDataLoaded, timeframe]);
 
   const fetchIndicators = async () => {
     try {
@@ -23,11 +23,11 @@ function Indicators({ symbol, isIndianStock, stockDataLoaded }) {
       
       let data;
       if (isIndianStock) {
-        console.log(`Fetching Indian stock indicators for ${symbol}`);
-        data = await api.getIndianIndicators(symbol, 30);
+        console.log(`Fetching Indian stock indicators for ${symbol} with timeframe ${timeframe}`);
+        data = await api.getIndianIndicators(symbol, 30, timeframe);
       } else {
-        console.log(`Fetching US stock indicators for ${symbol}`);
-        data = await api.getIndicators(symbol, 30);
+        console.log(`Fetching US stock indicators for ${symbol} with timeframe ${timeframe}`);
+        data = await api.getIndicators(symbol, 30, timeframe);
       }
       
       setIndicators(data);

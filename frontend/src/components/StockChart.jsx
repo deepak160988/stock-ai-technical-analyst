@@ -1,6 +1,6 @@
 import React from 'react';
 
-function StockChart({ symbol, data, isIndianStock }) {
+function StockChart({ symbol, data, isIndianStock, timeframe = '1mo' }) {
   if (!data || !data.prices) {
     return (
       <div className="section-full">
@@ -38,6 +38,9 @@ function StockChart({ symbol, data, isIndianStock }) {
         </p>
         <p>
           <strong>Exchange:</strong> {isIndianStock ? '🇮🇳 NSE' : '🇺🇸 NASDAQ/NYSE'}
+        </p>
+        <p>
+          <strong>Timeframe:</strong> {timeframe.toUpperCase()}
         </p>
         <p>
           <strong>Data Points:</strong> {data.data_points}

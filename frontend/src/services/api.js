@@ -52,10 +52,11 @@ const api = {
   // ============== US STOCKS API ==============
   
   // Get historical stock data
-  getStockData: async (symbol, days = 30) => {
+  getStockData: async (symbol, days = 30, timeframe = null) => {
     try {
+      const params = timeframe ? { timeframe } : { days };
       const response = await axiosInstance.get(`/api/stocks/${symbol}`, {
-        params: { days }
+        params
       });
       return response.data;
     } catch (error) {
@@ -78,10 +79,11 @@ const api = {
   // ============== TECHNICAL INDICATORS API ==============
   
   // Get all technical indicators
-  getIndicators: async (symbol, days = 30) => {
+  getIndicators: async (symbol, days = 30, timeframe = null) => {
     try {
+      const params = timeframe ? { timeframe } : { days };
       const response = await axiosInstance.get(`/api/indicators/${symbol}`, {
-        params: { days }
+        params
       });
       return response.data;
     } catch (error) {
@@ -91,10 +93,13 @@ const api = {
   },
 
   // Get RSI indicator
-  getRSI: async (symbol, days = 30, period = 14) => {
+  getRSI: async (symbol, days = 30, period = 14, timeframe = null) => {
     try {
+      const params = timeframe 
+        ? { timeframe, window: period } 
+        : { days, window: period };
       const response = await axiosInstance.get(`/api/indicators/${symbol}/rsi`, {
-        params: { days, window: period }
+        params
       });
       return response.data;
     } catch (error) {
@@ -104,10 +109,11 @@ const api = {
   },
 
   // Get MACD indicator
-  getMACD: async (symbol, days = 30) => {
+  getMACD: async (symbol, days = 30, timeframe = null) => {
     try {
+      const params = timeframe ? { timeframe } : { days };
       const response = await axiosInstance.get(`/api/indicators/${symbol}/macd`, {
-        params: { days }
+        params
       });
       return response.data;
     } catch (error) {
@@ -117,10 +123,13 @@ const api = {
   },
 
   // Get Bollinger Bands
-  getBollingerBands: async (symbol, days = 30, window = 20) => {
+  getBollingerBands: async (symbol, days = 30, window = 20, timeframe = null) => {
     try {
+      const params = timeframe 
+        ? { timeframe, window } 
+        : { days, window };
       const response = await axiosInstance.get(`/api/indicators/${symbol}/bollinger-bands`, {
-        params: { days, window }
+        params
       });
       return response.data;
     } catch (error) {
@@ -132,10 +141,11 @@ const api = {
   // ============== TRADING SIGNALS API ==============
   
   // Get trading signals
-  getSignals: async (symbol, days = 30) => {
+  getSignals: async (symbol, days = 30, timeframe = null) => {
     try {
+      const params = timeframe ? { timeframe } : { days };
       const response = await axiosInstance.get(`/api/signals/${symbol}`, {
-        params: { days }
+        params
       });
       return response.data;
     } catch (error) {
@@ -210,10 +220,11 @@ const api = {
   },
 
   // Get Indian stock historical data
-  getIndianStockData: async (symbol, days = 30) => {
+  getIndianStockData: async (symbol, days = 30, timeframe = null) => {
     try {
+      const params = timeframe ? { timeframe } : { days };
       const response = await axiosInstance.get(`/api/indian/stocks/${symbol}`, {
-        params: { days }
+        params
       });
       return response.data;
     } catch (error) {
@@ -236,10 +247,11 @@ const api = {
   // ============== NEW: INDIAN STOCK INDICATORS ==============
   
   // Get technical indicators for Indian stocks
-  getIndianIndicators: async (symbol, days = 30) => {
+  getIndianIndicators: async (symbol, days = 30, timeframe = null) => {
     try {
+      const params = timeframe ? { timeframe } : { days };
       const response = await axiosInstance.get(`/api/indian/indicators/${symbol}`, {
-        params: { days }
+        params
       });
       return response.data;
     } catch (error) {
