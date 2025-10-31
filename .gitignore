@@ -1,3 +1,23 @@
 __pycache__/
 *.py[cod]
 .env
+
+# Frontend build artifacts
+frontend/build/
+frontend/node_modules/.cache/
+
+# Test coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

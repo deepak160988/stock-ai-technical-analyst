@@ -4,6 +4,7 @@ import StockChart from './StockChart';
 import Indicators from './Indicators';
 import MLPrediction from './MLPrediction';
 import Portfolio from './Portfolio';
+import TimeframeSelector from './TimeframeSelector';
 import api from '../services/api';
 
 function Dashboard() {
@@ -14,6 +15,7 @@ function Dashboard() {
   const [isIndianStock, setIsIndianStock] = useState(false);
   const [indianStocksList, setIndianStocksList] = useState([]);
   const [showError, setShowError] = useState(true);
+  const [selectedTimeframe, setSelectedTimeframe] = useState('1d'); // Default to 1 day
 
   // Fetch Indian stocks list on component mount
   useEffect(() => {
@@ -38,13 +40,13 @@ function Dashboard() {
     loadIndianStocks();
   }, []);
 
-  // Fetch stock data when symbol changes
+  // Fetch stock data when symbol or timeframe changes
   useEffect(() => {
     if (indianStocksList.length > 0) {
       fetchStockData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbol, indianStocksList]);
+  }, [symbol, selectedTimeframe, indianStocksList]);
 
   // Auto-dismiss error after 10 seconds
   useEffect(() => {
@@ -68,13 +70,13 @@ function Dashboard() {
       
       let data;
       if (isIndian) {
-        // Fetch Indian stock data
-        console.log(`Fetching Indian stock data for ${symbol}`);
-        data = await api.getIndianStockData(symbol, 30);
+        // Fetch Indian stock data with timeframe
+        console.log(`Fetching Indian stock data for ${symbol} with timeframe ${selectedTimeframe}`);
+        data = await api.getIndianStockData(symbol, 30, selectedTimeframe);
       } else {
-        // Fetch US stock data
-        console.log(`Fetching US stock data for ${symbol}`);
-        data = await api.getStockData(symbol, 30);
+        // Fetch US stock data with timeframe
+        console.log(`Fetching US stock data for ${symbol} with timeframe ${selectedTimeframe}`);
+        data = await api.getStockData(symbol, 30, selectedTimeframe);
       }
       
       setStockData(data);
@@ -107,6 +109,10 @@ function Dashboard() {
 
   const dismissError = () => {
     setShowError(false);
+  };
+
+  const handleTimeframeChange = (timeframe) => {
+    setSelectedTimeframe(timeframe);
   };
 
   return (
@@ -144,6 +150,11 @@ function Dashboard() {
       )}
 
       {loading && <div className="loading-message">Loading stock data...</div>}
+
+      <TimeframeSelector 
+        selectedTimeframe={selectedTimeframe} 
+        onTimeframeChange={handleTimeframeChange} 
+      />
 
       <div className="dashboard-grid">
         <div className="section-full">
