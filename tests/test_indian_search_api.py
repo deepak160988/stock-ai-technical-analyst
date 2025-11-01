@@ -5,6 +5,7 @@ Tests for Indian stocks search API endpoint
 import pytest
 import sys
 import os
+from datetime import datetime
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -151,7 +152,6 @@ class TestIndianSearchAPI:
         assert isinstance(data["timestamp"], str)
         
         # Validate timestamp is ISO format
-        from datetime import datetime
         datetime.fromisoformat(data["timestamp"])  # Should not raise
     
     def test_search_results_are_deduplicated(self):

@@ -73,13 +73,20 @@ class IndianStockService:
                 # Validate and merge with existing mapping
                 valid_count = 0
                 for key, value in loaded_symbols.items():
-                    # Ensure keys are uppercase and values end with .NS
+                    # Ensure keys are uppercase
                     key_upper = key.upper()
                     if isinstance(value, str):
-                        if not (value.endswith('.NS') or value.endswith('.BO')):
-                            value = f"{value}.NS"
-                        self.indian_stocks[key_upper] = value
-                        valid_count += 1
+                        # Validate ticker format - should end with .NS or .BO
+                        if value.endswith('.NS') or value.endswith('.BO'):
+                            self.indian_stocks[key_upper] = value
+                            valid_count += 1
+                        # If no suffix, add .NS by default
+                        elif '.' not in value:
+                            self.indian_stocks[key_upper] = f"{value}.NS"
+                            valid_count += 1
+                        else:
+                            # Invalid format - skip with warning
+                            logger.warning(f"Skipping invalid ticker format for {key}: {value}")
                 
                 logger.info(f"Loaded {valid_count} Indian stock symbols from {json_path}")
             else:
@@ -88,6 +95,7 @@ class IndianStockService:
             logger.warning(f"Failed to parse JSON file: {e}. Using default symbol mapping.")
         except Exception as e:
             logger.warning(f"Error loading symbols from JSON: {e}. Using default symbol mapping.")
+
 
     def get_nse_symbol(self, symbol: str) -> str:
         """Convert symbol to NSE format"""
