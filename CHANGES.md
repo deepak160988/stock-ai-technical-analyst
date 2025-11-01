@@ -1,5 +1,19 @@
 # CHANGES.md
 
+## Unreleased
+
+### Added
+- **NIFTY 500 Universe Refresh Feature**
+  - New POST `/api/indian/stocks/refresh` endpoint to refresh Indian stock universe on demand
+  - Fetches latest NIFTY 500 constituents from NSE CSV endpoints
+  - Supports saving to cache (`config/.nse_nifty500.cache.json`) and optionally to tracked config (`config/nse_nifty500.json`)
+  - CLI script `scripts/refresh_nifty500.py` for offline/ops usage
+  - Comprehensive error handling with multiple URL fallbacks
+  - Returns detailed summary including update status, total stocks, save status, source, timestamp, and errors
+  - Universe data now includes symbol, name, and sector information
+  - IndianStockService enhanced to load universe from config files with fallback to seed data
+  - Tests for refresh functionality and endpoint
+
 ## Project Updates
 
 ### Date: 2025-10-16
