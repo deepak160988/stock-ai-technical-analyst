@@ -8,3 +8,6 @@ frontend/node_modules/.cache/
 
 # Test cache
 .pytest_cache/
+
+# Indian stock cache files
+config/.nse_nifty500.cache.json
