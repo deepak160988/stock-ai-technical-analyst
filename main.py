@@ -469,9 +469,6 @@ async def search_indian_stocks(query: str = Query(..., min_length=1, max_length=
         if not indian_stock_service:
             raise HTTPException(status_code=503, detail="Indian stock service not available")
         
-        if not query or len(query.strip()) == 0:
-            raise HTTPException(status_code=400, detail="Query parameter cannot be empty")
-        
         results = indian_stock_service.search_indian_stocks(query.strip())
         
         logger.info(f"Search query '{query}' returned {len(results)} results")
