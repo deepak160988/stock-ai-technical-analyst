@@ -46,6 +46,82 @@ GET /api/indian/stocks/RELIANCE?days=30
 GET /api/indian/stocks/RELIANCE?timeframe=1h
 ```
 
+### Indian Stocks Coverage
+
+The application now provides **expanded coverage of Indian stocks**, including approximately the full **NIFTY 500 universe**. The symbol mapping is loaded from `data/indian_nse_symbols.json` and includes:
+
+- **NIFTY 50** core stocks (RELIANCE, TCS, INFY, HDFCBANK, ICICIBANK, etc.)
+- **NIFTY 100** and beyond
+- Major sectoral stocks across:
+  - Banking & Finance (KOTAKBANK, HDFCLIFE, HDFCAMC, SBICARD, BANDHANBNK, etc.)
+  - IT & Technology (HCLTECH, TECHM, LTIM, COFORGE, PERSISTENT, etc.)
+  - Pharma (SUNPHARMA, DRREDDY, CIPLA, DIVISLAB, LUPIN, etc.)
+  - Energy & Utilities (IOC, BPCL, GAIL, HINDPETRO, NTPC, POWERGRID, etc.)
+  - Metals & Mining (JSWSTEEL, TATASTEEL, HINDALCO, JINDALSTEL, NMDC, etc.)
+  - Consumer Goods (BRITANNIA, DABUR, MARICO, GODREJCP, COLPAL, TITAN, etc.)
+  - Infrastructure (ADANIPORTS, ADANIGREEN, ADANITRANS, etc.)
+  - And many more sectors
+
+#### Search Indian Stocks
+
+Use the search endpoint to discover stock symbols:
+
+```bash
+# Search for HDFC-related stocks
+GET /api/indian/stocks/search?query=HDFC
+
+# Returns:
+{
+  "query": "HDFC",
+  "results": ["HDFC", "HDFCAMC", "HDFCBANK", "HDFCLIFE"],
+  "total": 4,
+  "timestamp": "2024-01-01T12:00:00.000000"
+}
+
+# Search by ticker (case-insensitive)
+GET /api/indian/stocks/search?query=TCS.NS
+
+# Returns:
+{
+  "query": "TCS.NS",
+  "results": ["TCS"],
+  "total": 1,
+  "timestamp": "2024-01-01T12:00:00.000000"
+}
+
+# Partial matching supported
+GET /api/indian/stocks/search?query=ADANI
+
+# Returns multiple ADANI group stocks
+{
+  "query": "ADANI",
+  "results": ["ADANIENT", "ADANIGREEN", "ADANIPORTS", "ADANIPOWER", "ADANITRANS", ...],
+  "total": 6,
+  "timestamp": "2024-01-01T12:00:00.000000"
+}
+```
+
+**Search Features:**
+- Case-insensitive search
+- Searches across both symbol keys and NSE tickers
+- Partial matching supported
+- De-duplicated results
+- Query length: 1-50 characters
+
+#### List All Indian Stocks
+
+```bash
+# Get complete list of available Indian stocks
+GET /api/indian/stocks/list
+
+# Returns:
+{
+  "stocks": ["RELIANCE", "TCS", "INFY", ...],
+  "total": 200,
+  "timestamp": "2024-01-01T12:00:00.000000"
+}
+```
+
 #### Response Format
 
 ```json

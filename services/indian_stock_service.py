@@ -1,6 +1,8 @@
 import yfinance as yf
 import pandas as pd
 import logging
+import json
+from pathlib import Path
 from typing import Optional, Dict, List
 
 logger = logging.getLogger(__name__)
@@ -9,6 +11,7 @@ logger = logging.getLogger(__name__)
 class IndianStockService:
     def __init__(self):
         self.cache = {}
+        # Default fallback mapping
         self.indian_stocks = {
             "RELIANCE": "RELIANCE.NS",
             "TCS": "TCS.NS",
@@ -53,6 +56,38 @@ class IndianStockService:
             "MINDTREE": "MINDTREE.NS",
             "PERSISTENT": "PERSISTENT.NS",
         }
+        # Load expanded mapping from JSON file if available
+        self._load_symbols_from_json()
+
+    def _load_symbols_from_json(self):
+        """Load Indian stock symbols from JSON file with fallback to default mapping"""
+        try:
+            # Determine the path to the JSON file relative to the project root
+            project_root = Path(__file__).parent.parent
+            json_path = project_root / "data" / "indian_nse_symbols.json"
+            
+            if json_path.exists():
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    loaded_symbols = json.load(f)
+                
+                # Validate and merge with existing mapping
+                valid_count = 0
+                for key, value in loaded_symbols.items():
+                    # Ensure keys are uppercase and values end with .NS
+                    key_upper = key.upper()
+                    if isinstance(value, str):
+                        if not (value.endswith('.NS') or value.endswith('.BO')):
+                            value = f"{value}.NS"
+                        self.indian_stocks[key_upper] = value
+                        valid_count += 1
+                
+                logger.info(f"Loaded {valid_count} Indian stock symbols from {json_path}")
+            else:
+                logger.info(f"JSON file not found at {json_path}, using default symbol mapping with {len(self.indian_stocks)} symbols")
+        except json.JSONDecodeError as e:
+            logger.warning(f"Failed to parse JSON file: {e}. Using default symbol mapping.")
+        except Exception as e:
+            logger.warning(f"Error loading symbols from JSON: {e}. Using default symbol mapping.")
 
     def get_nse_symbol(self, symbol: str) -> str:
         """Convert symbol to NSE format"""
@@ -230,17 +265,26 @@ class IndianStockService:
         return stocks
 
     def search_indian_stocks(self, query: str) -> List[str]:
-        """Search for Indian stocks by query"""
+        """Search for Indian stocks by query across symbol keys and NSE tickers"""
         try:
-            query = query.upper()
-            results = []
+            if not query or not query.strip():
+                return []
+            
+            query = query.upper().strip()
+            results = set()  # Use set for deduplication
 
             for symbol, nse_symbol in self.indian_stocks.items():
-                if query in symbol or query in nse_symbol:
-                    results.append(symbol)
+                # Search in the symbol key (case-insensitive)
+                if query in symbol:
+                    results.add(symbol)
+                # Search in the NSE ticker (case-insensitive)
+                elif query in nse_symbol.upper():
+                    results.add(symbol)
 
-            logger.info(f"Search for '{query}' returned {len(results)} results")
-            return results
+            # Convert set to sorted list for consistent results
+            sorted_results = sorted(list(results))
+            logger.info(f"Search for '{query}' returned {len(sorted_results)} results")
+            return sorted_results
 
         except Exception as e:
             logger.error(f"Error searching Indian stocks: {e}")
