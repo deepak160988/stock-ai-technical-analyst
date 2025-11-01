@@ -1,6 +1,8 @@
 import yfinance as yf
 import pandas as pd
 import logging
+import json
+from pathlib import Path
 from typing import Optional, Dict, List
 
 logger = logging.getLogger(__name__)
@@ -9,6 +11,7 @@ logger = logging.getLogger(__name__)
 class IndianStockService:
     def __init__(self):
         self.cache = {}
+        # Default fallback mapping
         self.indian_stocks = {
             "RELIANCE": "RELIANCE.NS",
             "TCS": "TCS.NS",
@@ -53,6 +56,28 @@ class IndianStockService:
             "MINDTREE": "MINDTREE.NS",
             "PERSISTENT": "PERSISTENT.NS",
         }
+        # Load from JSON file if available
+        self._load_symbols_from_json()
+
+    def _load_symbols_from_json(self):
+        """Load Indian stock symbols from JSON file with fallback to hardcoded mapping"""
+        try:
+            json_path = Path(__file__).parent.parent / "data" / "indian_nse_symbols.json"
+            if json_path.exists():
+                with open(json_path, 'r') as f:
+                    json_symbols = json.load(f)
+                    # Normalize keys to uppercase and ensure values end with .NS
+                    for key, value in json_symbols.items():
+                        key_upper = key.upper()
+                        ticker_value = value
+                        if not ticker_value.endswith('.NS') and not ticker_value.endswith('.BO'):
+                            ticker_value = f"{ticker_value}.NS"
+                        self.indian_stocks[key_upper] = ticker_value
+                logger.info(f"✓ Loaded {len(self.indian_stocks)} Indian stock symbols from JSON file")
+            else:
+                logger.info(f"JSON file not found at {json_path}, using fallback mapping with {len(self.indian_stocks)} symbols")
+        except Exception as e:
+            logger.warning(f"Failed to load JSON symbols: {e}. Using fallback mapping with {len(self.indian_stocks)} symbols")
 
     def get_nse_symbol(self, symbol: str) -> str:
         """Convert symbol to NSE format"""
@@ -230,17 +255,26 @@ class IndianStockService:
         return stocks
 
     def search_indian_stocks(self, query: str) -> List[str]:
-        """Search for Indian stocks by query"""
+        """Search for Indian stocks by query (searches both symbol keys and ticker values)"""
         try:
             query = query.upper()
-            results = []
+            results = set()  # Use set to de-duplicate
 
             for symbol, nse_symbol in self.indian_stocks.items():
-                if query in symbol or query in nse_symbol:
-                    results.append(symbol)
+                # Search in symbol key
+                if query in symbol:
+                    results.add(symbol)
+                # Search in NSE ticker value (without .NS/.BO suffix)
+                elif query in nse_symbol:
+                    results.add(symbol)
+                # Also check if query matches the ticker without suffix
+                elif query in nse_symbol.replace('.NS', '').replace('.BO', ''):
+                    results.add(symbol)
 
-            logger.info(f"Search for '{query}' returned {len(results)} results")
-            return results
+            # Convert to sorted list for consistent results
+            results_list = sorted(list(results))
+            logger.info(f"Search for '{query}' returned {len(results_list)} results")
+            return results_list
 
         except Exception as e:
             logger.error(f"Error searching Indian stocks: {e}")

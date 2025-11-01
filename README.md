@@ -46,6 +46,76 @@ GET /api/indian/stocks/RELIANCE?days=30
 GET /api/indian/stocks/RELIANCE?timeframe=1h
 ```
 
+### Indian Stocks API
+
+The API now includes **expanded coverage of approximately NIFTY 500 stocks** with enhanced search capabilities.
+
+#### Expanded Symbol Coverage
+
+The Indian stocks database has been significantly expanded from ~50 symbols to **300+ symbols**, providing comprehensive coverage across major sectors:
+
+- **Financial Services**: HDFCBANK, ICICIBANK, KOTAKBANK, AXISBANK, SBIN, HDFCLIFE, SBICARD, BAJFINANCE, etc.
+- **IT Services**: TCS, INFY, WIPRO, HCLTECH, TECHM, LTIM, COFORGE, PERSISTENT, MINDTREE
+- **Energy & Oil**: RELIANCE, IOC, BPCL, ONGC, GAIL, HINDPETRO, ADANIGREEN, ADANIPOWER
+- **Consumer Goods**: ITC, HINDUNILVR, BRITANNIA, DABUR, MARICO, NESTLEIND, TATACONSUM
+- **Metals & Mining**: TATASTEEL, JSWSTEEL, HINDALCO, VEDL, NMDC, JINDALSTEL
+- **Pharmaceuticals**: SUNPHARMA, DRREDDY, CIPLA, DIVISLAB, LUPIN, APOLLOHOSP
+- **Auto & Components**: MARUTI, TATAMOTORS, M&M, EICHERMOT, BAJAJ-AUTO, HEROMOTOCO
+- **Infrastructure**: ADANIPORTS, LT, ADANITRANS, IRCTC, CONCOR
+- **Cement**: ULTRACEMCO, AMBUJACEM, SHREECEM, ACC, JKCEMENT
+- And many more sectors...
+
+The symbol mapping is loaded from `data/indian_nse_symbols.json` with fallback to hardcoded symbols if the file is unavailable.
+
+#### List All Indian Stocks
+
+```bash
+GET /api/indian/stocks/list
+```
+
+**Response:**
+```json
+{
+  "stocks": ["RELIANCE", "TCS", "INFY", "HDFCBANK", "..."],
+  "total": 300,
+  "timestamp": "2024-01-01T12:00:00"
+}
+```
+
+#### Search for Indian Stocks
+
+Search for stocks by symbol or ticker name (case-insensitive, partial matching):
+
+```bash
+# Search by company name or symbol
+GET /api/indian/stocks/search?query=HDFC
+
+# Search by ticker
+GET /api/indian/stocks/search?query=TCS.NS
+
+# Partial match
+GET /api/indian/stocks/search?query=ADANI
+```
+
+**Response:**
+```json
+{
+  "query": "HDFC",
+  "results": ["HDFC", "HDFCBANK", "HDFCLIFE", "HDFCAMC"],
+  "total": 4,
+  "timestamp": "2024-01-01T12:00:00"
+}
+```
+
+**Query Parameters:**
+- `query` (required): Search term (1-50 characters)
+
+**Features:**
+- Case-insensitive search
+- Partial matching on both symbol keys and NSE tickers
+- De-duplicated results
+- Sorted alphabetically
+
 #### Response Format
 
 ```json
