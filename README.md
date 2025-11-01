@@ -46,6 +46,87 @@ GET /api/indian/stocks/RELIANCE?days=30
 GET /api/indian/stocks/RELIANCE?timeframe=1h
 ```
 
+### Indian Stocks Coverage
+
+The API now supports approximately **NIFTY 500** coverage for Indian stocks, with an extensible symbol mapping system.
+
+#### Symbol Mapping
+
+Indian stock symbols are loaded from `data/indian_nse_symbols.json`, which contains a comprehensive mapping of symbol keys to Yahoo Finance NSE tickers (ending with `.NS`). The JSON file can be easily extended to add more symbols.
+
+#### List Indian Stocks
+
+```bash
+# Get list of symbol keys (default, backward compatible)
+GET /api/indian/stocks/list
+
+# Response:
+{
+  "stocks": ["RELIANCE", "TCS", "INFY", ...],
+  "total": 350,
+  "timestamp": "2024-01-01T12:00:00"
+}
+
+# Get list with ticker information
+GET /api/indian/stocks/list?include_tickers=true
+# or
+GET /api/indian/stocks/list?include_tickers=1
+
+# Response:
+[
+  {"symbol": "RELIANCE", "ticker": "RELIANCE.NS"},
+  {"symbol": "TCS", "ticker": "TCS.NS"},
+  {"symbol": "INFY", "ticker": "INFY.NS"},
+  ...
+]
+```
+
+#### Search Indian Stocks
+
+Search for Indian stocks by symbol or ticker (case-insensitive):
+
+```bash
+# Search for HDFC stocks
+GET /api/indian/stocks/search?query=HDFC
+
+# Response:
+{
+  "query": "HDFC",
+  "results": ["HDFC", "HDFCBANK", "HDFCLIFE", "HDFCAMC"],
+  "total": 4,
+  "timestamp": "2024-01-01T12:00:00"
+}
+
+# Search by ticker
+GET /api/indian/stocks/search?query=TCS.NS
+
+# Response:
+{
+  "query": "TCS.NS",
+  "results": ["TCS"],
+  "total": 1,
+  "timestamp": "2024-01-01T12:00:00"
+}
+
+# Search for Adani group stocks
+GET /api/indian/stocks/search?query=ADANI
+
+# Response:
+{
+  "query": "ADANI",
+  "results": ["ADANIENT", "ADANIGREEN", "ADANIPORTS", "ADANIPOWER", "ADANITRANS", ...],
+  "total": 8,
+  "timestamp": "2024-01-01T12:00:00"
+}
+```
+
+**Search Features:**
+- Case-insensitive search
+- Searches both symbol keys and ticker values
+- Returns de-duplicated results
+- Query length: 1-50 characters
+- Rejects blank/whitespace-only queries with 400 error
+
 #### Response Format
 
 ```json
