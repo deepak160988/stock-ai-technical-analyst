@@ -1,6 +1,8 @@
 import yfinance as yf
 import pandas as pd
 import logging
+import json
+import os
 from typing import Optional, Dict, List
 
 logger = logging.getLogger(__name__)
@@ -9,6 +11,7 @@ logger = logging.getLogger(__name__)
 class IndianStockService:
     def __init__(self):
         self.cache = {}
+        # Default in-code mapping (fallback)
         self.indian_stocks = {
             "RELIANCE": "RELIANCE.NS",
             "TCS": "TCS.NS",
@@ -53,6 +56,42 @@ class IndianStockService:
             "MINDTREE": "MINDTREE.NS",
             "PERSISTENT": "PERSISTENT.NS",
         }
+        # Load JSON mapping if available
+        self._load_json_mapping()
+
+    def _load_json_mapping(self):
+        """Load NSE symbol mapping from JSON file if available"""
+        try:
+            # Determine path to data/indian_nse_symbols.json
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            json_path = os.path.join(current_dir, "..", "data", "indian_nse_symbols.json")
+            
+            if os.path.exists(json_path):
+                with open(json_path, "r", encoding="utf-8") as f:
+                    json_mapping = json.load(f)
+                
+                # Normalize keys to UPPERCASE and validate values
+                normalized_mapping = {}
+                for key, value in json_mapping.items():
+                    normalized_key = key.upper()
+                    # Ensure ticker ends with .NS or .BO
+                    if not (value.endswith(".NS") or value.endswith(".BO")):
+                        logger.warning(f"Skipping {key}: ticker {value} doesn't end with .NS or .BO")
+                        continue
+                    normalized_mapping[normalized_key] = value
+                
+                # Merge with existing mapping (JSON takes precedence)
+                original_count = len(self.indian_stocks)
+                self.indian_stocks.update(normalized_mapping)
+                new_count = len(self.indian_stocks)
+                
+                logger.info(f"Loaded {len(normalized_mapping)} symbols from JSON. Total symbols: {new_count} (added {new_count - original_count} new)")
+            else:
+                logger.info(f"JSON mapping file not found at {json_path}. Using in-code mapping with {len(self.indian_stocks)} symbols.")
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON mapping file: {e}. Using in-code mapping.")
+        except Exception as e:
+            logger.error(f"Failed to load JSON mapping: {e}. Using in-code mapping.")
 
     def get_nse_symbol(self, symbol: str) -> str:
         """Convert symbol to NSE format"""
@@ -230,17 +269,19 @@ class IndianStockService:
         return stocks
 
     def search_indian_stocks(self, query: str) -> List[str]:
-        """Search for Indian stocks by query"""
+        """Search for Indian stocks by query (searches both symbol keys and tickers)"""
         try:
-            query = query.upper()
-            results = []
+            query_upper = query.upper()
+            results = set()  # Use set for deduplication
 
             for symbol, nse_symbol in self.indian_stocks.items():
-                if query in symbol or query in nse_symbol:
-                    results.append(symbol)
+                # Search in both symbol key and ticker value
+                if query_upper in symbol or query_upper in nse_symbol:
+                    results.add(symbol)
 
-            logger.info(f"Search for '{query}' returned {len(results)} results")
-            return results
+            results_list = sorted(list(results))
+            logger.info(f"Search for '{query}' returned {len(results_list)} results")
+            return results_list
 
         except Exception as e:
             logger.error(f"Error searching Indian stocks: {e}")

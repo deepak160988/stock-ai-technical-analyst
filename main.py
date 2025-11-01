@@ -445,13 +445,49 @@ async def query_ai(question: str, symbol: str = None):
 
 
 @app.get("/api/indian/stocks/list")
-async def get_indian_stocks_list():
+async def get_indian_stocks_list(include_tickers: bool = Query(False)):
     try:
         if not indian_stock_service:
             raise HTTPException(status_code=503, detail="Indian stock service not available")
-        stocks = list(indian_stock_service.indian_stocks.keys())
-        logger.info(f"Retrieved list of {len(stocks)} Indian stocks")
+        
+        stocks_dict = indian_stock_service.indian_stocks
+        
+        if include_tickers:
+            # Return list of objects with symbol and ticker
+            stocks = [{"symbol": symbol, "ticker": ticker} for symbol, ticker in stocks_dict.items()]
+            logger.info(f"Retrieved list of {len(stocks)} Indian stocks with tickers")
+        else:
+            # Return list of symbol keys only (default behavior)
+            stocks = list(stocks_dict.keys())
+            logger.info(f"Retrieved list of {len(stocks)} Indian stocks")
+        
         return {"stocks": stocks, "total": len(stocks), "timestamp": datetime.now().isoformat()}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@app.get("/api/indian/stocks/search")
+async def search_indian_stocks(query: str = Query(..., min_length=1, max_length=50)):
+    try:
+        if not indian_stock_service:
+            raise HTTPException(status_code=503, detail="Indian stock service not available")
+        
+        # Reject blank/whitespace queries
+        if not query or not query.strip():
+            raise HTTPException(status_code=400, detail="Query cannot be blank or whitespace")
+        
+        results = indian_stock_service.search_indian_stocks(query.strip())
+        logger.info(f"Search query '{query}' returned {len(results)} results")
+        
+        return {
+            "query": query.strip(),
+            "results": results,
+            "total": len(results),
+            "timestamp": datetime.now().isoformat()
+        }
     except HTTPException:
         raise
     except Exception as e:
