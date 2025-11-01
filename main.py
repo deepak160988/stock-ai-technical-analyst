@@ -581,6 +581,40 @@ async def get_indian_indicators(symbol: str, days: int = Query(365, ge=1, le=100
 # ============== END OF NEW ENDPOINT ==============
 
 
+@app.post("/api/indian/stocks/refresh")
+async def refresh_indian_stocks(save_to_config: bool = Query(False, description="Save to tracked config file")):
+    """
+    Refresh NIFTY 500 universe from NSE
+    
+    Fetches the latest NIFTY 500 constituents and updates the in-memory universe.
+    Always saves to cache file, optionally saves to config file.
+    """
+    try:
+        if not indian_stock_service:
+            raise HTTPException(status_code=503, detail="Indian stock service not available")
+        
+        result = indian_stock_service.refresh_universe(save_to_config=save_to_config)
+        
+        if not result["updated"]:
+            logger.error(f"Failed to refresh NIFTY 500 universe: {result.get('errors', [])}")
+            raise HTTPException(
+                status_code=502,
+                detail={
+                    "message": "Failed to refresh NIFTY 500 universe",
+                    "errors": result.get("errors", [])
+                }
+            )
+        
+        logger.info(f"Successfully refreshed NIFTY 500 universe: {result['total']} stocks")
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error refreshing Indian stocks: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled exception: {str(exc)}")

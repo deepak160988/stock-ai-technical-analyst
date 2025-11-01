@@ -104,6 +104,76 @@ cd frontend
 npm test
 ```
 
+## Indian Stock Market Features
+
+### NIFTY 500 Universe Refresh
+
+The application includes functionality to refresh and update the Indian NIFTY 500 stock universe on demand.
+
+#### Refresh Endpoint
+
+**POST /api/indian/stocks/refresh**
+
+Fetches the latest NIFTY 500 constituents from NSE and updates the in-memory universe.
+
+Query Parameters:
+- `save_to_config` (boolean, default: false) - Save to tracked config file in addition to cache
+
+Example requests:
+```bash
+# Refresh and save to cache only
+POST /api/indian/stocks/refresh
+
+# Refresh and save to both cache and config
+POST /api/indian/stocks/refresh?save_to_config=true
+```
+
+Response (200 OK):
+```json
+{
+  "updated": true,
+  "total": 500,
+  "saved_cache": true,
+  "saved_config": false,
+  "source": "nse_csv",
+  "timestamp": "2025-11-01T12:34:56Z",
+  "errors": []
+}
+```
+
+Response (502 Bad Gateway) on failure:
+```json
+{
+  "detail": {
+    "message": "Failed to refresh NIFTY 500 universe",
+    "errors": ["error details..."]
+  }
+}
+```
+
+#### CLI Script
+
+Refresh the NIFTY 500 universe from the command line:
+
+```bash
+# Basic refresh (saves to cache only)
+python -m scripts.refresh_nifty500
+
+# Refresh and save to config file
+python -m scripts.refresh_nifty500 --save-to-config
+
+# With custom timeout
+python -m scripts.refresh_nifty500 --save-to-config --timeout 60
+```
+
+The script will:
+- Fetch the latest NIFTY 500 data from NSE
+- Update the in-memory universe
+- Save to cache file (`config/.nse_nifty500.cache.json`)
+- Optionally save to config file (`config/nse_nifty500.json`)
+- Print a human-readable summary and JSON output
+- Exit with code 0 on success, non-zero on failure
+
 ## API Documentation
 
 Once the server is running, visit:
