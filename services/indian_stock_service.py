@@ -279,7 +279,8 @@ class IndianStockService:
 
             for symbol, nse_symbol in self.indian_stocks.items():
                 # Search in both symbol key and ticker value
-                if query_upper in symbol or query_upper in nse_symbol.upper():
+                # Note: nse_symbol is already uppercase from initialization
+                if query_upper in symbol or query_upper in nse_symbol:
                     results.add(symbol)
 
             results_list = sorted(list(results))  # Convert to sorted list
