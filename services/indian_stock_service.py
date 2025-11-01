@@ -75,7 +75,14 @@ class IndianStockService:
             try:
                 with open(json_path, 'r') as f:
                     json_symbols = json.load(f)
+                    
+                    # Validate that it's a dictionary
+                    if not isinstance(json_symbols, dict):
+                        logger.warning(f"Invalid format in {json_path}: expected dict, got {type(json_symbols)}. Using in-code mapping.")
+                        return
+                    
                     # Merge with JSON taking precedence
+                    # Invalid entries will be filtered out during normalization
                     self.indian_stocks.update(json_symbols)
                     logger.info(f"Loaded {len(json_symbols)} symbols from {json_path}")
             except json.JSONDecodeError as e:
