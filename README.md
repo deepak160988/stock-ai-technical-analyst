@@ -46,6 +46,90 @@ GET /api/indian/stocks/RELIANCE?days=30
 GET /api/indian/stocks/RELIANCE?timeframe=1h
 ```
 
+### Indian Stocks
+
+The application supports comprehensive Indian stock analysis with an expanded universe covering approximately the NIFTY 500 index.
+
+#### Stock Coverage
+
+- **Expanded Universe**: ~390+ Indian stocks covering NIFTY 50, NIFTY 100, and extending toward NIFTY 500
+- **Data Source**: Symbol mappings are loaded from `data/indian_nse_symbols.json` (easily extensible)
+- **Exchange Support**: NSE (National Stock Exchange) and BSE (Bombay Stock Exchange) tickers
+
+#### List All Indian Stocks
+
+Get a list of all supported Indian stock symbols.
+
+```bash
+# Get list of symbol keys only (default, backward compatible)
+GET /api/indian/stocks/list
+
+# Response:
+{
+  "stocks": ["RELIANCE", "TCS", "HDFCBANK", ...],
+  "total": 391,
+  "timestamp": "2024-01-01T12:00:00"
+}
+
+# Get list with both symbols and tickers
+GET /api/indian/stocks/list?include_tickers=true
+# or
+GET /api/indian/stocks/list?include_tickers=1
+
+# Response:
+{
+  "stocks": [
+    {"symbol": "RELIANCE", "ticker": "RELIANCE.NS"},
+    {"symbol": "TCS", "ticker": "TCS.NS"},
+    {"symbol": "HDFCBANK", "ticker": "HDFCBANK.NS"},
+    ...
+  ],
+  "total": 391,
+  "timestamp": "2024-01-01T12:00:00"
+}
+```
+
+#### Search Indian Stocks
+
+Search for Indian stocks by symbol or ticker (case-insensitive).
+
+```bash
+# Search by partial symbol
+GET /api/indian/stocks/search?query=HDFC
+
+# Response:
+{
+  "query": "HDFC",
+  "results": ["HDFC", "HDFCBANK", "HDFCLIFE", "HDFCAMC"],
+  "total": 4,
+  "timestamp": "2024-01-01T12:00:00"
+}
+
+# Search by ticker
+GET /api/indian/stocks/search?query=TCS.NS
+
+# Response:
+{
+  "query": "TCS.NS",
+  "results": ["TCS"],
+  "total": 1,
+  "timestamp": "2024-01-01T12:00:00"
+}
+
+# Search is case-insensitive
+GET /api/indian/stocks/search?query=reliance
+# Returns same results as query=RELIANCE
+```
+
+**Query Parameters:**
+- `query` (required): Search string (1-50 characters, cannot be blank/whitespace)
+
+**Notes:**
+- Search matches against both symbol keys and ticker values
+- Results are deduplicated and sorted alphabetically
+- Returns 400 error for blank or whitespace-only queries
+
+
 #### Response Format
 
 ```json

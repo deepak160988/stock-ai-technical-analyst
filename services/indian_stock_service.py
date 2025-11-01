@@ -1,6 +1,8 @@
 import yfinance as yf
 import pandas as pd
 import logging
+import json
+import os
 from typing import Optional, Dict, List
 
 logger = logging.getLogger(__name__)
@@ -9,6 +11,7 @@ logger = logging.getLogger(__name__)
 class IndianStockService:
     def __init__(self):
         self.cache = {}
+        # Base mapping (can be extended via JSON file)
         self.indian_stocks = {
             "RELIANCE": "RELIANCE.NS",
             "TCS": "TCS.NS",
@@ -53,6 +56,56 @@ class IndianStockService:
             "MINDTREE": "MINDTREE.NS",
             "PERSISTENT": "PERSISTENT.NS",
         }
+        
+        # Load additional symbols from JSON file if available
+        self._load_symbols_from_json()
+        
+        # Normalize all keys to uppercase and validate values
+        self._normalize_symbols()
+    
+    def _load_symbols_from_json(self):
+        """Load Indian NSE symbols from JSON file if it exists"""
+        json_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "data",
+            "indian_nse_symbols.json"
+        )
+        
+        if os.path.exists(json_path):
+            try:
+                with open(json_path, 'r') as f:
+                    json_symbols = json.load(f)
+                    
+                    # Validate that it's a dictionary
+                    if not isinstance(json_symbols, dict):
+                        logger.warning(f"Invalid format in {json_path}: expected dict, got {type(json_symbols)}. Using in-code mapping.")
+                        return
+                    
+                    # Merge with JSON taking precedence
+                    # Invalid entries will be filtered out during normalization
+                    self.indian_stocks.update(json_symbols)
+                    logger.info(f"Loaded {len(json_symbols)} symbols from {json_path}")
+            except json.JSONDecodeError as e:
+                logger.warning(f"Invalid JSON in {json_path}: {e}. Using in-code mapping.")
+            except Exception as e:
+                logger.warning(f"Failed to load {json_path}: {e}. Using in-code mapping.")
+        else:
+            logger.info(f"JSON file {json_path} not found. Using in-code mapping only.")
+    
+    def _normalize_symbols(self):
+        """Normalize symbol keys to UPPERCASE and ensure values end with .NS or .BO"""
+        normalized = {}
+        for key, value in self.indian_stocks.items():
+            # Normalize key to uppercase
+            normalized_key = key.upper()
+            # Ensure value ends with .NS or .BO
+            if not (value.endswith('.NS') or value.endswith('.BO')):
+                logger.warning(f"Symbol {key} has invalid ticker {value}, skipping")
+                continue
+            normalized[normalized_key] = value
+        
+        self.indian_stocks = normalized
+        logger.info(f"Normalized {len(self.indian_stocks)} Indian stock symbols")
 
     def get_nse_symbol(self, symbol: str) -> str:
         """Convert symbol to NSE format"""
@@ -230,17 +283,23 @@ class IndianStockService:
         return stocks
 
     def search_indian_stocks(self, query: str) -> List[str]:
-        """Search for Indian stocks by query"""
+        """Search for Indian stocks by query (case-insensitive, searches both keys and tickers)"""
         try:
-            query = query.upper()
-            results = []
-
-            for symbol, nse_symbol in self.indian_stocks.items():
-                if query in symbol or query in nse_symbol:
-                    results.append(symbol)
-
-            logger.info(f"Search for '{query}' returned {len(results)} results")
-            return results
+            query_upper = query.upper()
+            results = set()  # Use set to deduplicate
+            
+            for symbol, ticker in self.indian_stocks.items():
+                # Search in symbol (key)
+                if query_upper in symbol:
+                    results.add(symbol)
+                # Search in ticker (value)
+                elif query_upper in ticker.upper():
+                    results.add(symbol)
+            
+            # Convert back to sorted list for consistent ordering
+            results_list = sorted(list(results))
+            logger.info(f"Search for '{query}' returned {len(results_list)} results")
+            return results_list
 
         except Exception as e:
             logger.error(f"Error searching Indian stocks: {e}")
