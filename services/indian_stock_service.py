@@ -76,6 +76,10 @@ class IndianStockService:
             logger.warning(f"Indian symbol validation failed for {symbol}: {e}")
             return len(symbol) >= 1 and len(symbol) <= 20
 
+    def validate_symbol(self, symbol: str) -> bool:
+        """Alias for validate_indian_symbol to maintain API parity and avoid AttributeError."""
+        return self.validate_indian_symbol(symbol)
+
     def get_indian_stock_historical_data(
         self,
         symbol: str,
