@@ -46,6 +46,63 @@ GET /api/indian/stocks/RELIANCE?days=30
 GET /api/indian/stocks/RELIANCE?timeframe=1h
 ```
 
+##### Search Indian Stocks
+
+The API now includes a search endpoint to discover Indian stock symbols easily. The expanded coverage includes approximately **NIFTY 500** stocks loaded from `data/indian_nse_symbols.json`.
+
+```bash
+# Search for stocks matching a query
+GET /api/indian/stocks/search?query=HDFC
+
+# Returns:
+{
+  "query": "HDFC",
+  "results": ["HDFC", "HDFCBANK", "HDFCLIFE", "HDFCAMC"],
+  "total": 4,
+  "timestamp": "2024-01-01T12:00:00"
+}
+
+# Search by ticker
+GET /api/indian/stocks/search?query=TCS.NS
+
+# Returns:
+{
+  "query": "TCS.NS",
+  "results": ["TCS"],
+  "total": 1,
+  "timestamp": "2024-01-01T12:00:00"
+}
+```
+
+**Search Features:**
+- Case-insensitive search across both symbol keys and NSE tickers
+- Partial match support (e.g., "ADANI" returns all Adani group stocks)
+- Query validation (1-50 characters required)
+- Returns deduplicated, sorted results
+
+##### List All Indian Stocks
+
+```bash
+# Get complete list of available Indian stocks
+GET /api/indian/stocks/list
+
+# Returns:
+{
+  "stocks": ["RELIANCE", "TCS", "INFY", ...],
+  "total": 180,
+  "timestamp": "2024-01-01T12:00:00"
+}
+```
+
+**Coverage:** The Indian stocks list now includes ~180+ symbols covering NIFTY 50, NIFTY 100, and widely held names up to NIFTY 500, including:
+- Banking & Finance: HDFCBANK, ICICIBANK, KOTAKBANK, AXISBANK, SBIN, HDFCLIFE, SBICARD, etc.
+- IT: TCS, INFY, WIPRO, HCLTECH, TECHM, LTIM, COFORGE, PERSISTENT, etc.
+- Auto & Transportation: MARUTI, TATAMOTORS, EICHERMOT, BAJAJ-AUTO, M&M, etc.
+- Pharma: SUNPHARMA, DRREDDY, CIPLA, DIVISLAB, LUPIN, etc.
+- Energy & Utilities: RELIANCE, IOC, BPCL, GAIL, NTPC, POWERGRID, etc.
+- Consumer: HINDUNILVR, ITC, BRITANNIA, DABUR, MARICO, NESTLEIND, etc.
+- Infrastructure: ADANIPORTS, ADANIGREEN, IRCTC, HAL, BEL, etc.
+
 #### Response Format
 
 ```json
