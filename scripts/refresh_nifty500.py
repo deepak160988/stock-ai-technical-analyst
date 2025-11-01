@@ -57,7 +57,7 @@ Examples:
     
     # Refresh universe
     print("Fetching latest NIFTY 500 data from NSE...")
-    result = service.refresh_universe(save_to_config=args.save_to_config)
+    result = service.refresh_universe(save_to_config=args.save_to_config, timeout=args.timeout)
     
     # Print human-readable summary
     print()

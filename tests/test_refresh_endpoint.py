@@ -65,8 +65,8 @@ class TestIndianStockRefreshEndpoint:
             assert data["source"] == "nse_csv"
             assert "timestamp" in data
             
-            # Verify service was called with correct parameters
-            mock_service.refresh_universe.assert_called_once_with(save_to_config=False)
+            # Verify service was called with correct parameters (timeout defaults to 30)
+            mock_service.refresh_universe.assert_called_once_with(save_to_config=False, timeout=30)
     
     def test_refresh_endpoint_with_save_to_config(self, client, mock_success_result):
         """Test refresh with save_to_config=true"""
@@ -83,8 +83,20 @@ class TestIndianStockRefreshEndpoint:
             assert data["updated"] is True
             assert data["saved_config"] is True
             
-            # Verify service was called with save_to_config=True
-            mock_service.refresh_universe.assert_called_once_with(save_to_config=True)
+            # Verify service was called with save_to_config=True and default timeout
+            mock_service.refresh_universe.assert_called_once_with(save_to_config=True, timeout=30)
+    
+    def test_refresh_endpoint_with_custom_timeout(self, client, mock_success_result):
+        """Test refresh with custom timeout"""
+        with patch('main.indian_stock_service') as mock_service:
+            mock_service.refresh_universe.return_value = mock_success_result
+            
+            response = client.post("/api/indian/stocks/refresh?timeout=60")
+            
+            assert response.status_code == 200
+            
+            # Verify service was called with custom timeout
+            mock_service.refresh_universe.assert_called_once_with(save_to_config=False, timeout=60)
     
     def test_refresh_endpoint_failure(self, client, mock_failure_result):
         """Test refresh endpoint when refresh fails"""

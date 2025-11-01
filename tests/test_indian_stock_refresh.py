@@ -43,7 +43,7 @@ ICICIBANK,ICICI Bank Ltd.,Banking"""
             mock_response.raise_for_status = Mock()
             mock_get.return_value = mock_response
             
-            result = service.refresh_universe(save_to_config=False)
+            result = service.refresh_universe(save_to_config=False, timeout=30)
             
             assert result["updated"] is True
             assert result["total"] == 5

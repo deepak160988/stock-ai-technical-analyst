@@ -118,6 +118,7 @@ Fetches the latest NIFTY 500 constituents from NSE and updates the in-memory uni
 
 Query Parameters:
 - `save_to_config` (boolean, default: false) - Save to tracked config file in addition to cache
+- `timeout` (integer, default: 30) - Timeout in seconds for HTTP requests (min: 5, max: 300)
 
 Example requests:
 ```bash
@@ -126,6 +127,9 @@ POST /api/indian/stocks/refresh
 
 # Refresh and save to both cache and config
 POST /api/indian/stocks/refresh?save_to_config=true
+
+# Refresh with custom timeout
+POST /api/indian/stocks/refresh?save_to_config=true&timeout=60
 ```
 
 Response (200 OK):

@@ -582,7 +582,10 @@ async def get_indian_indicators(symbol: str, days: int = Query(365, ge=1, le=100
 
 
 @app.post("/api/indian/stocks/refresh")
-async def refresh_indian_stocks(save_to_config: bool = Query(False, description="Save to tracked config file")):
+async def refresh_indian_stocks(
+    save_to_config: bool = Query(False, description="Save to tracked config file"),
+    timeout: int = Query(30, ge=5, le=300, description="Timeout in seconds for HTTP requests")
+):
     """
     Refresh NIFTY 500 universe from NSE
     
@@ -593,7 +596,7 @@ async def refresh_indian_stocks(save_to_config: bool = Query(False, description=
         if not indian_stock_service:
             raise HTTPException(status_code=503, detail="Indian stock service not available")
         
-        result = indian_stock_service.refresh_universe(save_to_config=save_to_config)
+        result = indian_stock_service.refresh_universe(save_to_config=save_to_config, timeout=timeout)
         
         if not result["updated"]:
             logger.error(f"Failed to refresh NIFTY 500 universe: {result.get('errors', [])}")

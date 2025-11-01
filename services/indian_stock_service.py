@@ -53,12 +53,13 @@ class IndianStockService:
         
         logger.info(f"Using seed data: {len(self.indian_stocks)} Indian stocks")
 
-    def refresh_universe(self, save_to_config: bool = False) -> dict:
+    def refresh_universe(self, save_to_config: bool = False, timeout: int = 30) -> dict:
         """
         Refresh NIFTY 500 universe from NSE
         
         Args:
             save_to_config: If True, save to config/nse_nifty500.json in addition to cache
+            timeout: Timeout in seconds for HTTP requests (default: 30)
             
         Returns:
             Summary dict with update status and metadata
@@ -88,7 +89,7 @@ class IndianStockService:
         for url in urls:
             try:
                 logger.info(f"Attempting to fetch NIFTY 500 from {url}")
-                response = requests.get(url, headers=headers, timeout=30)
+                response = requests.get(url, headers=headers, timeout=timeout)
                 response.raise_for_status()
                 
                 # Parse CSV
