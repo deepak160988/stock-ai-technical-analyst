@@ -1,6 +1,8 @@
 import yfinance as yf
 import pandas as pd
 import logging
+import json
+from pathlib import Path
 from typing import Optional, Dict, List
 
 logger = logging.getLogger(__name__)
@@ -9,6 +11,7 @@ logger = logging.getLogger(__name__)
 class IndianStockService:
     def __init__(self):
         self.cache = {}
+        # Default hardcoded mapping (fallback)
         self.indian_stocks = {
             "RELIANCE": "RELIANCE.NS",
             "TCS": "TCS.NS",
@@ -53,6 +56,30 @@ class IndianStockService:
             "MINDTREE": "MINDTREE.NS",
             "PERSISTENT": "PERSISTENT.NS",
         }
+        # Load extended mapping from JSON file
+        self._load_symbols_from_json()
+
+    def _load_symbols_from_json(self):
+        """Load Indian stock symbols from JSON file"""
+        try:
+            json_path = Path(__file__).parent.parent / "data" / "indian_nse_symbols.json"
+            if json_path.exists():
+                with open(json_path, 'r') as f:
+                    json_data = json.load(f)
+                
+                # Merge JSON data into indian_stocks (JSON takes precedence)
+                # Ensure keys are uppercase and values end with .NS
+                for symbol, ticker in json_data.items():
+                    symbol_upper = symbol.upper()
+                    ticker_clean = ticker if ticker.endswith('.NS') else f"{ticker}.NS"
+                    self.indian_stocks[symbol_upper] = ticker_clean
+                
+                logger.info(f"Loaded {len(json_data)} symbols from {json_path}, total symbols: {len(self.indian_stocks)}")
+            else:
+                logger.warning(f"Indian NSE symbols file not found at {json_path}, using default mapping with {len(self.indian_stocks)} symbols")
+        except Exception as e:
+            logger.error(f"Error loading Indian NSE symbols from JSON: {e}, using default mapping")
+
 
     def get_nse_symbol(self, symbol: str) -> str:
         """Convert symbol to NSE format"""
@@ -230,17 +257,22 @@ class IndianStockService:
         return stocks
 
     def search_indian_stocks(self, query: str) -> List[str]:
-        """Search for Indian stocks by query"""
+        """Search for Indian stocks by query (searches both symbol keys and ticker values)"""
         try:
             query = query.upper()
-            results = []
+            results = set()  # Use set for de-duplication
 
             for symbol, nse_symbol in self.indian_stocks.items():
-                if query in symbol or query in nse_symbol:
-                    results.append(symbol)
+                # Search in symbol key
+                if query in symbol:
+                    results.add(symbol)
+                # Search in ticker value (including .NS suffix)
+                elif query in nse_symbol:
+                    results.add(symbol)
 
-            logger.info(f"Search for '{query}' returned {len(results)} results")
-            return results
+            results_list = sorted(list(results))
+            logger.info(f"Search for '{query}' returned {len(results_list)} results")
+            return results_list
 
         except Exception as e:
             logger.error(f"Error searching Indian stocks: {e}")

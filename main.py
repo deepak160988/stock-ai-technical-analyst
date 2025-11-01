@@ -459,6 +459,32 @@ async def get_indian_stocks_list():
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 
+@app.get("/api/indian/stocks/search")
+async def search_indian_stocks(query: str = Query(..., min_length=1, max_length=50)):
+    """
+    Search for Indian stocks by query string.
+    Query is matched against both stock symbols and NSE tickers.
+    """
+    try:
+        if not indian_stock_service:
+            raise HTTPException(status_code=503, detail="Indian stock service not available")
+        
+        results = indian_stock_service.search_indian_stocks(query.strip())
+        
+        logger.info(f"Search query '{query}' returned {len(results)} results")
+        return {
+            "query": query,
+            "results": results,
+            "total": len(results),
+            "timestamp": datetime.now().isoformat()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in search endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
 @app.get("/api/indian/stocks/{symbol}")
 async def get_indian_stock_data(
     symbol: str,

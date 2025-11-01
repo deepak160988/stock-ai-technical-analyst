@@ -46,6 +46,52 @@ GET /api/indian/stocks/RELIANCE?days=30
 GET /api/indian/stocks/RELIANCE?timeframe=1h
 ```
 
+##### Indian Stocks - List All Available Symbols
+
+```bash
+# List all available Indian stock symbols
+GET /api/indian/stocks/list
+```
+
+Response:
+```json
+{
+  "stocks": ["RELIANCE", "TCS", "INFY", ...],
+  "total": 300,
+  "timestamp": "2024-01-01T12:00:00"
+}
+```
+
+**Note:** The Indian stocks universe now covers approximately **NIFTY 500** stocks (~300+ symbols) loaded from `data/indian_nse_symbols.json`. This includes all major stocks from NIFTY 50, NIFTY 100, and widely held names from the broader NIFTY 500 index.
+
+##### Indian Stocks - Search for Symbols
+
+```bash
+# Search for Indian stocks by query (matches symbol names and NSE tickers)
+GET /api/indian/stocks/search?query=HDFC
+
+# Search examples
+GET /api/indian/stocks/search?query=TATA
+GET /api/indian/stocks/search?query=BANK
+GET /api/indian/stocks/search?query=TCS.NS
+```
+
+Response:
+```json
+{
+  "query": "HDFC",
+  "results": ["HDFC", "HDFCBANK", "HDFCLIFE", "HDFCAMC"],
+  "total": 4,
+  "timestamp": "2024-01-01T12:00:00"
+}
+```
+
+**Features:**
+- Case-insensitive search
+- Matches both symbol keys and NSE tickers
+- De-duplicated results
+- Query parameter: 1-50 characters required
+
 #### Response Format
 
 ```json
