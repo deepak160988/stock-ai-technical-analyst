@@ -69,9 +69,10 @@ class IndianStockService:
                     # Normalize keys to uppercase and ensure values end with .NS
                     for key, value in json_symbols.items():
                         key_upper = key.upper()
-                        if not value.endswith('.NS') and not value.endswith('.BO'):
-                            value = f"{value}.NS"
-                        self.indian_stocks[key_upper] = value
+                        ticker_value = value
+                        if not ticker_value.endswith('.NS') and not ticker_value.endswith('.BO'):
+                            ticker_value = f"{ticker_value}.NS"
+                        self.indian_stocks[key_upper] = ticker_value
                 logger.info(f"✓ Loaded {len(self.indian_stocks)} Indian stock symbols from JSON file")
             else:
                 logger.info(f"JSON file not found at {json_path}, using fallback mapping with {len(self.indian_stocks)} symbols")
