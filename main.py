@@ -445,18 +445,56 @@ async def query_ai(question: str, symbol: str = None):
 
 
 @app.get("/api/indian/stocks/list")
-async def get_indian_stocks_list():
+async def get_indian_stocks_list(include_tickers: bool = Query(False)):
     try:
         if not indian_stock_service:
             raise HTTPException(status_code=503, detail="Indian stock service not available")
-        stocks = list(indian_stock_service.indian_stocks.keys())
-        logger.info(f"Retrieved list of {len(stocks)} Indian stocks")
-        return {"stocks": stocks, "total": len(stocks), "timestamp": datetime.now().isoformat()}
+        
+        if include_tickers:
+            # Return list of objects with symbol and ticker
+            stocks = [
+                {"symbol": symbol, "ticker": ticker}
+                for symbol, ticker in indian_stock_service.indian_stocks.items()
+            ]
+            logger.info(f"Retrieved list of {len(stocks)} Indian stocks with tickers")
+            return {"stocks": stocks, "total": len(stocks), "timestamp": datetime.now().isoformat()}
+        else:
+            # Default: return list of symbol keys only (backward compatible)
+            stocks = list(indian_stock_service.indian_stocks.keys())
+            logger.info(f"Retrieved list of {len(stocks)} Indian stocks")
+            return {"stocks": stocks, "total": len(stocks), "timestamp": datetime.now().isoformat()}
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@app.get("/api/indian/stocks/search")
+async def search_indian_stocks(query: str = Query(..., min_length=1, max_length=50)):
+    try:
+        if not indian_stock_service:
+            raise HTTPException(status_code=503, detail="Indian stock service not available")
+        
+        # Reject blank/whitespace queries
+        if not query or query.strip() == "":
+            raise HTTPException(status_code=400, detail="Query cannot be blank or whitespace")
+        
+        results = indian_stock_service.search_indian_stocks(query)
+        logger.info(f"Search for '{query}' returned {len(results)} results")
+        
+        return {
+            "query": query,
+            "results": results,
+            "total": len(results),
+            "timestamp": datetime.now().isoformat()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error searching Indian stocks: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
 
 
 @app.get("/api/indian/stocks/{symbol}")
